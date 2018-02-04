@@ -46,7 +46,11 @@ use Mediabot::User;
 # Main Settings
 my %MAIN_CONF;
 my $CONFIG_FILE;
+<<<<<<< HEAD
 my $MAIN_PROG_VERSION = '2.0beta';
+=======
+my $MAIN_PROG_VERSION = '2.0alpha';
+>>>>>>> c17f139035ebf4390005bf8767d1ef95a1eba62d
 my $MAIN_PROG_VERSION_LIVR = $MAIN_PROG_VERSION;
 my $MAIN_PID_FILE;
 my $MAIN_PROG_DAEMON = 0;
