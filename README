@@ -1,9 +1,0 @@
-Last revised: Feb 4, 2018
-
-Mediabotv2 is a perl Net::Async::IRC bot
-
-It is still a beta version and has been tested on Undernet ircu server.
-
-Hope you'll enjoy it.
-
-Read INSTALL file to know how to deploy it.
