@@ -1,0 +1,207 @@
+mediabot@mediabot:~$ git clone https://github.com/teuk/mediabot_v2
+Clonage dans 'mediabot_v2'...
+remote: Counting objects: 61, done.
+remote: Compressing objects: 100% (48/48), done.
+remote: Total 61 (delta 22), reused 47 (delta 10), pack-reused 0
+Dépaquetage des objets: 100% (61/61), fait.
+
+mediabot@mediabot:~$ cd mediabot_v2/
+
+mediabot@mediabot:~/mediabot_v2$ ll
+total 68
+drwxr-xr-x 5 mediabot mediabot  4096 févr.  5 08:45 .
+drwxr-xr-x 4 mediabot mediabot  4096 févr.  5 08:45 ..
+-rw-r--r-- 1 mediabot mediabot  2205 févr.  5 08:45 COMMANDS
+-rwxr-xr-x 1 mediabot mediabot  7340 févr.  5 08:45 configure
+drwxr-xr-x 8 mediabot mediabot  4096 févr.  5 08:45 .git
+drwxr-xr-x 2 mediabot mediabot  4096 févr.  5 08:45 install
+-rw-r--r-- 1 mediabot mediabot  1198 févr.  5 08:45 INSTALL
+drwxr-xr-x 2 mediabot mediabot  4096 févr.  5 08:45 Mediabot
+-rwxr-xr-x 1 mediabot mediabot 22091 févr.  5 08:45 mediabot.pl
+-rw-r--r-- 1 mediabot mediabot   503 févr.  5 08:45 README
+-rw-r--r-- 1 mediabot mediabot    14 févr.  5 08:45 README.md
+
+mediabot@mediabot:~/mediabot_v2$ ./configure 
+[05/02/2018 08:45:50] Check if sudo is available OK
+[05/02/2018 08:45:50] Check if perl is available OK
+[05/02/2018 08:45:50] Check if cpan is available OK
+[05/02/2018 08:45:50] Check if make is available OK
+[05/02/2018 08:45:50] Check if gcc is available OK
+[05/02/2018 08:45:50] Check if mysql is available OK
+[05/02/2018 08:45:50] This script will assume that you will install the bot in the same location of config file
+[05/02/2018 08:45:50] Choose config file location where you want to install the bot
+[05/02/2018 08:45:50] Enter config file absolute path in current directory (Hit enter for '/home/mediabot/mediabot_v2/mediabot.conf') : 
+[05/02/2018 08:45:53] Configure /home/mediabot/mediabot_v2/mediabot.conf (Hit CTRL-C to abort and launch ./configure again to change
+[05/02/2018 08:45:53] Press any key to continue
+[05/02/2018 08:45:54] The bot will be installed in /home/mediabot/mediabot_v2 with /home/mediabot/mediabot_v2/mediabot.conf configuration file
+[05/02/2018 08:45:54] Press any key to continue
+[05/02/2018 08:45:54] Enter a prefix char to reply to commands on channels [!] : 
+[05/02/2018 08:45:55] Database installation must be run with sudo (as root user)
+[05/02/2018 08:45:55] mediabot DB Installation
+[05/02/2018 08:45:55] Check if mysql command is available OK
+[05/02/2018 08:45:55] [+] Stage 1 : Database creation
+[05/02/2018 08:45:55] Enter MySQL database (Hit enter for 'mediabot') :  ^C
+mediabot@mediabot:~/mediabot_v2$ ./configure 
+[05/02/2018 08:45:58] Check if sudo is available OK
+[05/02/2018 08:45:58] Check if perl is available OK
+[05/02/2018 08:45:58] Check if cpan is available OK
+[05/02/2018 08:45:58] Check if make is available OK
+[05/02/2018 08:45:58] Check if gcc is available OK
+[05/02/2018 08:45:58] Check if mysql is available OK
+[05/02/2018 08:45:58] This script will assume that you will install the bot in the same location of config file
+[05/02/2018 08:45:58] Choose config file location where you want to install the bot
+[05/02/2018 08:45:58] Enter config file absolute path in current directory (Hit enter for '/home/mediabot/mediabot_v2/mediabot.conf') : 
+[05/02/2018 08:45:59] Configure /home/mediabot/mediabot_v2/mediabot.conf (Hit CTRL-C to abort and launch ./configure again to change
+[05/02/2018 08:45:59] Press any key to continue
+[05/02/2018 08:46:00] The bot will be installed in /home/mediabot/mediabot_v2 with /home/mediabot/mediabot_v2/mediabot.conf configuration file
+[05/02/2018 08:46:00] Press any key to continue
+[05/02/2018 08:46:01] Enter a prefix char to reply to commands on channels [!] : #
+[05/02/2018 08:46:03] Database installation must be run with sudo (as root user)
+[05/02/2018 08:46:03] mediabot DB Installation
+[05/02/2018 08:46:03] Check if mysql command is available OK
+[05/02/2018 08:46:03] [+] Stage 1 : Database creation
+[05/02/2018 08:46:03] Enter MySQL database (Hit enter for 'mediabot') :  
+[05/02/2018 08:46:05] Enter MySQL host (Hit enter for localhost) :  
+[05/02/2018 08:46:06] Enter MySQL port (Hit enter for '3306') :  
+[05/02/2018 08:46:07] Enter MySQL root user (Hit enter for 'root') :  
+[05/02/2018 08:46:07] Enter MySQL root password (Hit enter if empty) : ***********
+[05/02/2018 08:46:11] Database mediabot creation using (localhost:3306) (root <password set>)
+[05/02/2018 08:46:11] Check connection to MySQL DB OK
+[05/02/2018 08:46:11] Create database mediabot OK
+[05/02/2018 08:46:11] Create database structure OK
+[05/02/2018 08:46:13] DB Tables
+Tables_in_mediabot
+ACTIONS_LOG
+ACTIONS_QUEUE
+CHANNEL
+CHANNEL_LOG
+CHANNEL_PURGED
+CONSOLE
+NETWORK
+PUBLIC_COMMANDS
+PUBLIC_COMMANDS_CATEGORY
+SERVERS
+USER
+USER_CHANNEL
+USER_LEVEL
+WEBLOG
+[05/02/2018 08:46:13] [+] Stage 2 : Database user creation
+[05/02/2018 08:46:13] Enter MySQL database user (not root) (Hit enter for 'mediabot') :  
+[05/02/2018 08:46:14] Enter MySQL database user pass (Hit enter for 'Sc2bcEvIhJ9q') :  
+[05/02/2018 08:46:14] Grant privileges on mediabot to mediabot with user password OK
+[05/02/2018 08:46:14] Flush privileges OK
+[05/02/2018 08:46:14] Check connection to MySQL DB with defined user mediabot OK
+[05/02/2018 08:46:14] Database configuration completed.
+[05/02/2018 08:46:14] Configure /home/mediabot/mediabot_v2/mediabot.conf [mysql] parameters OK
+OK
+[05/02/2018 08:46:14] Perl modules installation must be run with sudo (as root user). This may take a long time, be patient
+[05/02/2018 08:46:14] Press any key to continue
+[05/02/2018 08:46:15] Autoconfigure cpan OK
+[05/02/2018 08:46:16] Install perl modules
+[05/02/2018 08:46:16] Checking File::Basename  OK
+[05/02/2018 08:46:16] Checking Date::Language  OK
+[05/02/2018 08:46:16] Checking Date::Format  OK
+[05/02/2018 08:46:16] Checking Date::Manip  Not found. Installing via cpan OK
+[05/02/2018 08:47:22] Checking Date::Parse  OK
+[05/02/2018 08:47:22] Checking IO::Async::Loop  Not found. Installing via cpan OK
+[05/02/2018 08:49:33] Checking Net::Async::IRC  Not found. Installing via cpan OK
+[05/02/2018 08:49:44] Checking String::IRC  Not found. Installing via cpan OK
+[05/02/2018 08:49:56] Checking Data::Dumper  OK
+[05/02/2018 08:49:56] Checking Time::HiRes  OK
+[05/02/2018 08:49:56] Checking Getopt::Long  OK
+[05/02/2018 08:49:56] Checking Config::Simple  Not found. Installing via cpan OK
+[05/02/2018 08:49:59] Checking IO::Socket::INET  OK
+[05/02/2018 08:49:59] Checking Net::Server::NonBlocking  Not found. Installing via cpan OK
+[05/02/2018 08:50:01] Checking WordList::Phrase::FR::Proverb::Wikiquote  Not found. Installing via cpan OK
+[05/02/2018 08:50:05] Checking Memory::Usage  Not found. Installing via cpan OK
+[05/02/2018 08:50:08] Checking DBD::mysql  OK
+[05/02/2018 08:50:08] Checking DBI  OK
+[05/02/2018 08:50:08] Checking Switch  OK
+[05/02/2018 08:50:08] Verify perl modules installation
+[05/02/2018 08:50:08] Checking File::Basename OK
+[05/02/2018 08:50:08] Checking Date::Language OK
+[05/02/2018 08:50:08] Checking Date::Format OK
+[05/02/2018 08:50:08] Checking Date::Manip OK
+[05/02/2018 08:50:08] Checking Date::Parse OK
+[05/02/2018 08:50:08] Checking IO::Async::Loop OK
+[05/02/2018 08:50:08] Checking Net::Async::IRC OK
+[05/02/2018 08:50:08] Checking String::IRC OK
+[05/02/2018 08:50:08] Checking Data::Dumper OK
+[05/02/2018 08:50:08] Checking Time::HiRes OK
+[05/02/2018 08:50:08] Checking Getopt::Long OK
+[05/02/2018 08:50:08] Checking Config::Simple OK
+[05/02/2018 08:50:08] Checking IO::Socket::INET OK
+[05/02/2018 08:50:08] Checking Net::Server::NonBlocking OK
+[05/02/2018 08:50:08] Checking WordList::Phrase::FR::Proverb::Wikiquote OK
+[05/02/2018 08:50:08] Checking Memory::Usage OK
+[05/02/2018 08:50:08] Checking DBD::mysql OK
+[05/02/2018 08:50:09] Checking DBI OK
+[05/02/2018 08:50:09] Checking Switch OK
+[05/02/2018 08:50:09] Perl modules successfully installed
+[05/02/2018 08:50:09] Get database connection settings
+[05/02/2018 08:50:09] Connect to database mediabot
+[05/02/2018 08:50:09] Connected to mediabot.
+[05/02/2018 08:50:09] Configure [connection] in /home/mediabot/mediabot_v2/mediabot.conf
+[05/02/2018 08:50:09] Enter network name : MyNetwork
+[05/02/2018 08:51:04] Network MyNetwork added in NETWORK table with id : 1
+[05/02/2018 08:51:04] Enter irc server hostname : teuk.undernet.testnet.fake
+[05/02/2018 08:51:34] IRC Server teuk.undernet.testnet.fake added in SERVERS table with id : 1
+[05/02/2018 08:51:34] Enter bot nick [mediabot] : 
+[05/02/2018 08:51:37] Enter alternative nick [mediabot_] : 
+[05/02/2018 08:51:37] Enter bot ident (username) [mediabot] : 
+[05/02/2018 08:51:39] Enter bot real name [mediabot] : 
+[05/02/2018 08:51:41] Enter bot default (console) channel (must start with #) : #teuk
+[05/02/2018 08:51:54] Enter bot default (console) channel key (Hit Enter for none) : 
+[05/02/2018 08:51:56] Console channel #teuk added in CHANNEL table with id : 1
+[05/02/2018 08:51:56] If you choose to set +x usermode on Undernet network type, be sure to have a valid username
+[05/02/2018 08:51:56] Joining channels (other than console) in this case will fail because you're not authenticated to X
+[05/02/2018 08:51:56] Enter bot user mode [+i] : +ix
+[05/02/2018 08:52:02] You can specify network type 
+[05/02/2018 08:52:02] 1 : Undernet (ircu)
+[05/02/2018 08:52:02] 2 : Freenode (ircd-seven)
+[05/02/2018 08:52:02] 0 : Other
+[05/02/2018 08:52:02] Enter network type [0] : 1
+[05/02/2018 08:52:06] Configure undernet section
+[05/02/2018 08:52:06] Enter channel service target [x@channels.undernet.org] : x@channels.undernet.testnet.fake
+[05/02/2018 08:52:48] Enter channel service username (Enter to leave it empty) : mediabot
+[05/02/2018 08:52:52] Enter channel service password (Enter to leave it empty) : mypassword
+[05/02/2018 08:53:02] Configuration completed.
+
+mediabot@mediabot:~/mediabot_v2$ cat mediabot.conf 
+[main]
+MAIN_PROG_NAME=Mediabot
+MAIN_PROG_NAME_LOWER=mediabot
+MAIN_PID_FILE=/home/mediabot/mediabot_v2/mediabot.pid
+MAIN_LOG_FILE=/home/mediabot/mediabot_v2/mediabot.log
+MAIN_PROG_BIRTHDATE=1517816761
+MAIN_PROG_TZ=America/New_York
+MAIN_PROG_URL=http://www.domain.tld/mediabot
+MAIN_PROG_DEBUG=0
+MAIN_PROG_MAXLEN=400
+MAIN_SQL_FLOOD_PROTECT_COUNT=10
+MAIN_SQL_FLOOD_PROTECT_DURATION=120
+MAIN_PROG_CMD_CHAR=#
+
+
+[mysql]
+MAIN_PROG_DDBNAME=mediabot
+MAIN_PROG_DBUSER=mediabot
+MAIN_PROG_DBPASS=Sc2bcEvIhJ9q
+MAIN_PROG_DBHOST=localhost
+MAIN_PROG_DBPORT=3306
+
+
+[connection]
+CONN_SERVER_NETWORK=MyNetwork
+CONN_NICK=mediabot
+CONN_NICK_ALTERNATE=mediabot_
+CONN_USERNAME=mediabot
+CONN_IRCNAME=mediabot
+CONN_USERMODE=+ix
+CONN_NETWORK_TYPE=1
+
+[undernet]
+UNET_CSERVICE_LOGIN=x@channels.undernet.testnet.fake
+UNET_CSERVICE_USERNAME=mediabot
+UNET_CSERVICE_PASSWORD=mypassword
+
