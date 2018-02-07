@@ -28,6 +28,9 @@ sub mbCommandPublic(@) {
 		case "act"					{ $bFound = 1;
 													actChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "cstat"				{ $bFound = 1;
+													userCstat(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -125,6 +128,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "ident"				{ $bFound = 1;
 													userIdent(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "cstat"				{ $bFound = 1;
+													userCstat(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);

@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userChannelInfo userCount userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVoiceChannel);
+@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVoiceChannel);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -1829,6 +1829,43 @@ sub userChannelInfo(@) {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
 		return undef;
 	}	
+}
+
+# cstat 
+sub userCstat(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				my $sGetAuthUsers = "SELECT nickname,description,level FROM USER,USER_LEVEL WHERE USER.id_user_level=USER_LEVEL.id_user_level AND auth=1 ORDER by level";
+				my $sth = $dbh->prepare($sGetAuthUsers);
+				unless ($sth->execute) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userCstat() SQL Error : " . $DBI::errstr . " Query : " . $sGetAuthUsers);
+				}
+				else {
+					my $sAuthUserStr;
+					while (my $ref = $sth->fetchrow_hashref()) {
+						$sAuthUserStr .= $ref->{'nickname'} . " (" . $ref->{'description'} . ") ";
+					}
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Utilisateurs authentifiés : " . $sAuthUserStr);
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " cstat command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " cstat command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
+			return undef;
+		}
+	}
 }
 
 1;

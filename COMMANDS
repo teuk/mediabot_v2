@@ -60,19 +60,43 @@ Master COMMANDS
 
 /msg mediabot adduser [-n] <username> *ident@hostname <Owner|Master|Administrator|User>
 
+or on channel
+
+!adduser [-n] <username> *ident@hostname <Owner|Master|Administrator|User>
+
 Administrator COMMANDS
 
 * Make the bot say something on a channel
 
 /msg mediabot say #channel <message>
 
+or on channel
+
+!say #channel <message>
+
 * Make the bot act something on a channel
 
 /msg mediabot act #channel <message>
 
+or on channel
+
+!act #channel <message>
+
+* Check logged users
+
+/msg mediabot cstat
+
+or on channel
+
+!cstat
+
 * Register a channel for a user (make the user be Level 500 on the channel and make the bot join it)
 
-/msg mediabot addchan <username>
+/msg mediabot addchan #channel <username>
+
+or on channel
+
+!addchan #channel <username>
 
 Channels COMMMANDS
 
@@ -84,7 +108,21 @@ Level   50: kick topic
 Level   25: voice devoice
 Level    0: chaninfo
 
-all commands may be used like this /msg mediabot <commands> <#channel> <parameters>
+all commands may be used like this /msg mediabot <command> <#channel> <parameters>
+
+or on channel
+!command #channel <parameters>
+
+Examples :
+
+/msg mediabot add #channel diablo 400
+
+!part #channel
+
+/msg mediabot voice #channel diablo
+
+!chaninfo #channel
+
 
 This file has to be completed, please be patient.
 
