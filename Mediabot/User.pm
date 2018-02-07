@@ -1822,6 +1822,7 @@ sub userChannelInfo(@) {
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"The channel $sChannel doesn't appear to be registered");
 			}
+			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chaninfo",@tArgs);
 		}
 		
 	}

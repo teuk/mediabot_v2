@@ -19,6 +19,9 @@ sub mbCommandPublic(@) {
 	my %MAIN_CONF = %$Config;
 	my $bFound = 0;
 	switch($sCommand) {
+		case "quit"					{ $bFound = 1;
+													mbQuit(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "msg"					{ $bFound = 1;
 													msgCmd(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -102,6 +105,9 @@ sub mbCommandPrivate(@) {
 	my %MAIN_CONF = %$Config;
 	my $bFound = 0;
 	switch($sCommand) {
+		case "quit"					{ $bFound = 1;
+													mbQuit(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "register"			{ $bFound = 1;
 													mbRegister(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -213,6 +219,7 @@ sub mbDebug(@) {
 					$cfg->param("main.MAIN_PROG_DEBUG", $tArgs[0]);
 					%MAIN_CONF = $cfg->vars();
 					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Debug set to " . $tArgs[0]);
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Debug set to " . $tArgs[0]);
 					return %MAIN_CONF;
 				}
 				else {
@@ -220,6 +227,30 @@ sub mbDebug(@) {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"debug_level 0 to 5");
 					return undef;
 				}
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
+			return undef;
+		}
+	}
+}
+
+# quit <quit message>
+sub mbQuit(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				$irc->send_message( "QUIT", undef, @tArgs );
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"quit",@tArgs);
+				clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
