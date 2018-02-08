@@ -48,22 +48,6 @@ sub dbConnect(@) {
 	return $dbh;
 }
 
-sub dbCheckHandle(@) {
-	my ($Config,$LOG,$dbh) = @_;
-	my %MAIN_CONF = %$Config;
-	my $sCheckConnectionQuery = "SHOW TABLES";
-	my $sth = $dbh->prepare($sCheckConnectionQuery);
-	unless ($sth->execute) {
-		#if ( $DBI::errstr eq 'MySQL server has gone away' ) {
-			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Database connection lost, reconnecting");
-			$dbh = dbConnect(\%MAIN_CONF,$LOG);
-		#}
-		#else {
-		#	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"dbCheckHandle() SQL Error : " . $DBI::errstr . " Query : " . $sCheckConnectionQuery);
-		#}
-	}
-}
-
 sub dbLogoutUsers(@) {
 	my ($Config,$LOG,$dbh) = @_;
 	my %MAIN_CONF = %$Config;
