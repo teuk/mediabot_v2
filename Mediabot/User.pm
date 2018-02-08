@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVoiceChannel);
+@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -1862,6 +1862,48 @@ sub userCstat(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " cstat command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
+			return undef;
+		}
+	}
+}
+
+# whoami 
+sub userWhoAmI(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Nick : $sNick");
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Host : " . $message->prefix);
+			if (defined($sMatchingUserHandle)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Handle : $sMatchingUserHandle");
+			}
+			if (defined($iMatchingUserLevel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level : " . $iMatchingUserLevelDesc);
+			}
+			if (defined($sMatchingUserInfo1)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Info1 : $sMatchingUserInfo1");
+			}
+			if (defined($sMatchingUserInfo2)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Info2 : $sMatchingUserInfo2");
+			}
+			my $sQuery = "SELECT creation_date,last_login FROM USER WHERE id_user=?";
+			my $sth = $dbh->prepare($sQuery);
+			unless ($sth->execute($iMatchingUserId)) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+			}
+			else {
+				if (my $ref = $sth->fetchrow_hashref()) {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Creation date : " . $ref->{'creation_date'});
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Last login : " . $ref->{'last_login'});
+				}
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " whoami command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
 			return undef;

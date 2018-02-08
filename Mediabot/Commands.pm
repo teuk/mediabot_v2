@@ -88,6 +88,9 @@ sub mbCommandPublic(@) {
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "whoami"				{ $bFound = 1;
+													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
 												}
@@ -192,6 +195,9 @@ sub mbCommandPrivate(@) {
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "whoami"				{ $bFound = 1;
+													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		else								{
 												
 												}
@@ -248,9 +254,14 @@ sub mbQuit(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
-				$irc->send_message( "QUIT", undef, @tArgs );
+				#if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+				#	$irc->write("QUIT :" . join(" ",@tArgs) . "\x0d\x0a");
+				#}
+				#else {
+				#	$irc->write("QUIT\x0d\x0a");
+				#}
+				$irc->send_message( "QUIT", undef, join(" ",@tArgs) );
 				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"quit",@tArgs);
-				clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");

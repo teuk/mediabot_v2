@@ -22,26 +22,6 @@ drwxr-xr-x 2 mediabot mediabot  4096 févr.  5 08:45 Mediabot
 -rw-r--r-- 1 mediabot mediabot    14 févr.  5 08:45 README.md
 
 mediabot@mediabot:~/mediabot_v2$ ./configure 
-[05/02/2018 08:45:50] Check if sudo is available OK
-[05/02/2018 08:45:50] Check if perl is available OK
-[05/02/2018 08:45:50] Check if cpan is available OK
-[05/02/2018 08:45:50] Check if make is available OK
-[05/02/2018 08:45:50] Check if gcc is available OK
-[05/02/2018 08:45:50] Check if mysql is available OK
-[05/02/2018 08:45:50] This script will assume that you will install the bot in the same location of config file
-[05/02/2018 08:45:50] Choose config file location where you want to install the bot
-[05/02/2018 08:45:50] Enter config file absolute path in current directory (Hit enter for '/home/mediabot/mediabot_v2/mediabot.conf') : 
-[05/02/2018 08:45:53] Configure /home/mediabot/mediabot_v2/mediabot.conf (Hit CTRL-C to abort and launch ./configure again to change
-[05/02/2018 08:45:53] Press any key to continue
-[05/02/2018 08:45:54] The bot will be installed in /home/mediabot/mediabot_v2 with /home/mediabot/mediabot_v2/mediabot.conf configuration file
-[05/02/2018 08:45:54] Press any key to continue
-[05/02/2018 08:45:54] Enter a prefix char to reply to commands on channels [!] : 
-[05/02/2018 08:45:55] Database installation must be run with sudo (as root user)
-[05/02/2018 08:45:55] mediabot DB Installation
-[05/02/2018 08:45:55] Check if mysql command is available OK
-[05/02/2018 08:45:55] [+] Stage 1 : Database creation
-[05/02/2018 08:45:55] Enter MySQL database (Hit enter for 'mediabot') :  ^C
-mediabot@mediabot:~/mediabot_v2$ ./configure 
 [05/02/2018 08:45:58] Check if sudo is available OK
 [05/02/2018 08:45:58] Check if perl is available OK
 [05/02/2018 08:45:58] Check if cpan is available OK

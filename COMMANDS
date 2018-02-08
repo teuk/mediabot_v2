@@ -46,7 +46,7 @@ Ex : /msg mediabot adduser -n diablo *diablo@diablo.users.undernet.org User
 
 * User can add a new hostmask :
 
-/msg mediabot ident <password>
+/msg mediabot ident <username> <password>
 
 OWNER COMMANDS
 
@@ -55,6 +55,14 @@ OWNER COMMANDS
 /msg mediabot dump <raw command>
 
 Master COMMANDS
+
+* Quit bot
+
+/msg mediabot quit [reason]
+
+or on channel
+
+!quit [reason]
 
 * Add a user to the bot (Level Master)
 
@@ -106,7 +114,7 @@ Level  400: add modinfo rem
 Level  100: op deop invite
 Level   50: kick topic
 Level   25: voice devoice
-Level    0: chaninfo
+Level    0: chaninfo whoami
 
 all commands may be used like this /msg mediabot <command> <#channel> <parameters>
 

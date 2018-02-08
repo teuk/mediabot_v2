@@ -123,6 +123,7 @@ sub on_message_JOIN(@);
 sub on_message_001(@);
 sub on_message_002(@);
 sub on_message_003(@);
+sub on_message_RPL_WHOISUSER(@);
 
 
 # +---------------------------------------------------------------------------+
@@ -242,6 +243,7 @@ my $irc = Net::Async::IRC->new(
   on_message_001 => \&on_message_001,
   on_message_002 => \&on_message_002,
   on_message_003 => \&on_message_003,
+  on_message_RPL_WHOISUSER => \&on_message_RPL_WHOISUSER,
 );
 
 $loop->add( $irc );
@@ -520,6 +522,7 @@ sub on_message_WHO(@) {
 
 sub on_message_WHOIS(@) {
 	my ($self,$message,$hints) = @_;
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,Dumper($message));
 	my ($target_name) = @{$hints}{qw<target_name>};
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"on_message_WHOIS() $target_name");
 }
@@ -568,4 +571,17 @@ sub on_motd(@) {
 	foreach my $line (@{$motd_lines[0]}) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"-motd- $line");
 	}
+}
+
+sub on_message_RPL_WHOISUSER(@) {
+	my ($self,$message,$hints) = @_;
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,Dumper($message));
+	my @tArgs = $message->args;
+	my $sHostname = $tArgs[3];
+	my ($target_name,$ident,$host,$flags,$realname) = @{$hints}{qw<target_name ident host flags realname>};
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 target_name $target_name");
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 ident $ident");
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 flags $flags");
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 realname $realname");
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$target_name is $ident\@$sHostname $flags $realname");
 }
