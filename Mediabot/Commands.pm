@@ -15,7 +15,8 @@ use Mediabot::User;
 @EXPORT  = qw(mbCommandPrivate mbCommandPublic mbDbCommand mbDebug mbRegister mbVersion);
 
 sub mbCommandPublic(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
+	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my $bFound = 0;
 	switch($sCommand) {
@@ -91,6 +92,9 @@ sub mbCommandPublic(@) {
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "auth"					{ $bFound = 1;
+													%WHOIS_VARS = userAuthNick(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
 												}
@@ -100,11 +104,16 @@ sub mbCommandPublic(@) {
 	}
 	unless ( $bFound ) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"Public command '$sCommand' not found");
+		return ();
+	}
+	else {
+		return %WHOIS_VARS;
 	}
 }
 
 sub mbCommandPrivate(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sNick,$sCommand,@tArgs)	= @_;
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sNick,$sCommand,@tArgs)	= @_;
+	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my $bFound = 0;
 	switch($sCommand) {
@@ -198,12 +207,22 @@ sub mbCommandPrivate(@) {
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "verify"				{ $bFound = 1;
+													%WHOIS_VARS = userVerifyNick(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "auth"					{ $bFound = 1;
+													%WHOIS_VARS = userAuthNick(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		else								{
 												
 												}
 	}
 	unless ( $bFound ) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$message->prefix . " Private command '$sCommand' not found");
+		return ();
+	}
+	else {
+		return %WHOIS_VARS;
 	}
 }
 

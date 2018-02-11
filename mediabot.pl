@@ -18,6 +18,7 @@ use Date::Language;
 use Date::Format;
 use Date::Manip;
 use Date::Parse;
+use Switch;
 use IO::Async::Loop;
 use Net::Async::IRC;
 use String::IRC;
@@ -85,6 +86,7 @@ my $DB_AUTORECONNECT_DELAY = 120;
 # !          GLOBAL VARS                                                      !
 # +---------------------------------------------------------------------------+
 my $iConnectionTimestamp;
+my %WHOIS_VARS;
 
 
 # +---------------------------------------------------------------------------+
@@ -470,7 +472,7 @@ sub on_message_PRIVMSG(@) {
         $sCommand = substr($sCommand,1);
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
-        	mbCommandPublic(\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
+        	%WHOIS_VARS = mbCommandPublic(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
         }
 		}
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
@@ -487,7 +489,7 @@ sub on_message_PRIVMSG(@) {
     		%MAIN_CONF = mbDebug($cfg,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,@tArgs);
     	}
     	else {
-    		mbCommandPrivate(\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
+    		%WHOIS_VARS = mbCommandPrivate(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
     	}
     }
 	}	
@@ -579,9 +581,57 @@ sub on_message_RPL_WHOISUSER(@) {
 	my @tArgs = $message->args;
 	my $sHostname = $tArgs[3];
 	my ($target_name,$ident,$host,$flags,$realname) = @{$hints}{qw<target_name ident host flags realname>};
-	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 target_name $target_name");
-	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 ident $ident");
-	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 flags $flags");
-	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"311 realname $realname");
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$target_name is $ident\@$sHostname $flags $realname");
+	if (defined($WHOIS_VARS{'nick'}) && ($WHOIS_VARS{'nick'} eq $target_name) && defined($WHOIS_VARS{'sub'}) && ($WHOIS_VARS{'sub'} ne "")) {
+		switch($WHOIS_VARS{'sub'}) {
+			case "userVerifyNick" {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"WHOIS userVerifyNick");
+				my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfoWhois(\%MAIN_CONF,$LOG,$dbh,"$ident\@$sHostname");
+				if (defined($WHOIS_VARS{'caller'}) && ($WHOIS_VARS{'caller'} ne "")) {
+					if (defined($iMatchingUserId)) {
+						if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name is authenticated as $sMatchingUserHandle ($iMatchingUserLevelDesc)");
+						}
+						else {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name is not authenticated. User $sMatchingUserHandle ($iMatchingUserLevelDesc)");
+						}
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name is not a known user with this hostmask : $ident\@$sHostname");
+					}
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"verify",($target_name));
+				}
+			}
+			case "userAuthNick" {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"WHOIS userAuthNick");
+				my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfoWhois(\%MAIN_CONF,$LOG,$dbh,"$ident\@$sHostname");
+				if (defined($WHOIS_VARS{'caller'}) && ($WHOIS_VARS{'caller'} ne "")) {
+					if (defined($iMatchingUserId)) {
+						if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name is already authenticated as $sMatchingUserHandle ($iMatchingUserLevelDesc)");
+						}
+						else {
+							my $sQuery = "UPDATE USER SET auth=1 WHERE nickname=?";
+							my $sth = $dbh->prepare($sQuery);
+							unless ($sth->execute($sMatchingUserHandle)) {
+								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+							}
+							else {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name has been authenticated. User $sMatchingUserHandle ($iMatchingUserLevelDesc)");
+							}
+						}
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name is not a known user with this hostmask : $ident\@$sHostname");
+					}
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"auth",($target_name));
+				}
+			}
+		}
+		$WHOIS_VARS{'nick'} = "";
+		$WHOIS_VARS{'sub'} = "";
+		$WHOIS_VARS{'caller'} = "";
+		$WHOIS_VARS{'channel'} = "";
+		$WHOIS_VARS{'message'} = "";
+	}
 }

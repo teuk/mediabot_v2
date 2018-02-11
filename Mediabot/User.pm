@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -1851,6 +1851,7 @@ sub userCstat(@) {
 						$sAuthUserStr .= $ref->{'nickname'} . " (" . $ref->{'description'} . ") ";
 					}
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Utilisateurs authentifiés : " . $sAuthUserStr);
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"cstat",@tArgs);
 				}
 			}
 			else {
@@ -1877,7 +1878,7 @@ sub userWhoAmI(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Nick : $sNick");
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Host : " . $message->prefix);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Hostmask : " . $message->prefix);
 			if (defined($sMatchingUserHandle)) {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Handle : $sMatchingUserHandle");
 			}
@@ -1901,9 +1902,153 @@ sub userWhoAmI(@) {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Last login : " . $ref->{'last_login'});
 				}
 			}
+			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whoami",@tArgs);
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " whoami command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
+			return undef;
+		}
+	}
+}
+
+sub getNickInfoWhois(@) {
+	my ($Config,$LOG,$dbh,$sWhoisHostmask) = @_;
+	my %MAIN_CONF = %$Config;
+	my $iMatchingUserId = undef;
+	my $iMatchingUserLevel = undef;
+	my $iMatchingUserLevelDesc = undef;
+	my $iMatchingUserAuth = undef;
+	my $sMatchingUserHandle = undef;
+	my $sMatchingUserPasswd = undef;
+	my $sMatchingUserInfo1 = undef;
+	my $sMatchingUserInfo2 = undef;
+	
+	my $sCheckQuery = "SELECT * FROM USER";
+	my $sth = $dbh->prepare($sCheckQuery);
+	unless ($sth->execute ) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"getNickInfoWhois() SQL Error : " . $DBI::errstr . " Query : " . $sCheckQuery);
+	}
+	else {	
+		while (my $ref = $sth->fetchrow_hashref()) {
+			my @tHostmasks = split(/,/,$ref->{'hostmasks'});
+			foreach my $sHostmask (@tHostmasks) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() Checking hostmask : " . $sHostmask);
+				$sHostmask =~ s/\./\\./g;
+				$sHostmask =~ s/\*/.*/g;
+				if ( $sWhoisHostmask =~ /^$sHostmask/ ) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getNickInfoWhois() $sHostmask matches " . $sWhoisHostmask);
+					$sMatchingUserHandle = $ref->{'nickname'};
+					if (defined($ref->{'password'})) {
+						$sMatchingUserPasswd = $ref->{'password'};
+					}
+					$iMatchingUserId = $ref->{'id_user'};
+					my $iMatchingUserLevelId = $ref->{'id_user_level'};
+					my $sGetLevelQuery = "SELECT * FROM USER_LEVEL WHERE id_user_level=?";
+					my $sth2 = $dbh->prepare($sGetLevelQuery);
+				        unless ($sth2->execute($iMatchingUserLevelId)) {
+                				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"getNickInfoWhois() SQL Error : " . $DBI::errstr . " Query : " . $sGetLevelQuery);
+        				}
+        				else {
+               					while (my $ref2 = $sth2->fetchrow_hashref()) {
+							$iMatchingUserLevel = $ref2->{'level'};
+							$iMatchingUserLevelDesc = $ref2->{'description'};
+						}
+					}
+					$iMatchingUserAuth = $ref->{'auth'};
+					if (defined($ref->{'info1'})) {
+						$sMatchingUserInfo1 = $ref->{'info1'};
+					}
+					if (defined($ref->{'info2'})) {
+						$sMatchingUserInfo2 = $ref->{'info2'};
+					}
+				}
+			}
+		}
+	}
+	
+	if (defined($iMatchingUserId)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getNickInfoWhois() iMatchingUserId : $iMatchingUserId");
+	}
+	else {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getNickInfoWhois() iMatchingUserId is undefined with this host : " . $sWhoisHostmask);
+		return (undef,undef,undef,undef,undef,undef,undef);
+	}
+	if (defined($iMatchingUserLevel)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() iMatchingUserLevel : $iMatchingUserLevel");
+	}
+	if (defined($iMatchingUserLevelDesc)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() iMatchingUserLevelDesc : $iMatchingUserLevelDesc");
+	}
+	if (defined($iMatchingUserAuth)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() iMatchingUserAuth : $iMatchingUserAuth");
+	}
+	if (defined($sMatchingUserHandle)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() sMatchingUserHandle : $sMatchingUserHandle");
+	}
+	if (defined($sMatchingUserPasswd)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() sMatchingUserPasswd : $sMatchingUserPasswd");
+	}
+	if (defined($sMatchingUserInfo1)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() sMatchingUserInfo1 : $sMatchingUserInfo1");
+	}
+	if (defined($sMatchingUserInfo2)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"getNickInfoWhois() sMatchingUserInfo2 : $sMatchingUserInfo2");
+	}
+	return ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2);
+}
+
+# verify <nick> 
+sub userVerifyNick(@) {
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %WHOIS_VARS = %$WVars;
+	my %MAIN_CONF = %$Config;
+	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+		$WHOIS_VARS{'nick'} = $tArgs[0];
+		$WHOIS_VARS{'sub'} = "userVerifyNick";
+		$WHOIS_VARS{'caller'} = $sNick;
+		$WHOIS_VARS{'channel'} = undef;
+		$WHOIS_VARS{'message'} = $message;
+		$irc->send_message("WHOIS", undef, $tArgs[0]);
+		return %WHOIS_VARS;
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : verify <nick>");
+	}
+}
+
+# auth <nick> 
+sub userAuthNick(@) {
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %WHOIS_VARS = %$WVars;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					$WHOIS_VARS{'nick'} = $tArgs[0];
+					$WHOIS_VARS{'sub'} = "userAuthNick";
+					$WHOIS_VARS{'caller'} = $sNick;
+					$WHOIS_VARS{'channel'} = undef;
+					$WHOIS_VARS{'message'} = $message;
+					$irc->send_message("WHOIS", undef, $tArgs[0]);
+					return %WHOIS_VARS;
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : auth <nick>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " auth command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " auth command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
 			return undef;
