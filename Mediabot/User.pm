@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelPart channelSet checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -2056,4 +2056,85 @@ sub userAuthNick(@) {
 	}
 }
 
+sub getUserChannelLevelByName(@) {
+	my ($Config,$LOG,$dbh,$sChannel,$sHandle) = @_;
+	my %MAIN_CONF = %$Config;
+	my $iChannelUserLevel = 0;
+	my $sQuery = "SELECT level FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND USER_CHANNEL.id_channel=CHANNEL.id_channel AND CHANNEL.name=? AND USER.nickname=?";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($sChannel,$sHandle)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"getUserChannelLevelByName() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		if (my $ref = $sth->fetchrow_hashref()) {
+			$iChannelUserLevel = $ref->{'level'};
+		}
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getUserChannelLevelByName() iChannelUserLevel = $iChannelUserLevel");
+	}
+	return $iChannelUserLevel;
+}
+
+# access #channel <nickhandle>
+# access #channel =<nick>
+sub userAccessChannel(@) {
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %WHOIS_VARS = %$WVars;
+	my %MAIN_CONF = %$Config;
+	if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+		my $sChannel = $tArgs[0];
+		shift @tArgs;
+		if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+			if (substr($tArgs[0], 0, 1) eq '=') {
+				$tArgs[0] = substr($tArgs[0],1);
+				$WHOIS_VARS{'nick'} = $tArgs[0];
+				$WHOIS_VARS{'sub'} = "userAccessChannel";
+				$WHOIS_VARS{'caller'} = $sNick;
+				$WHOIS_VARS{'channel'} = $sChannel;
+				$WHOIS_VARS{'message'} = $message;
+				$irc->send_message("WHOIS", undef, $tArgs[0]);
+				return %WHOIS_VARS;
+			}
+			else {
+				my $iChannelUserLevelAccess = getUserChannelLevelByName(\%MAIN_CONF,$LOG,$dbh,$sChannel,$tArgs[0]);
+				if ( $iChannelUserLevelAccess == 0 ) {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No Match!");
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"USER: " . $tArgs[0] . " ACCESS: $iChannelUserLevelAccess");
+					my $sQuery = "SELECT automode,greet FROM USER,USER_CHANNEL,CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel AND USER.id_user=USER_CHANNEL.id_user AND nickname like ? AND CHANNEL.name=?";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($tArgs[0],$sChannel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						my $sAuthUserStr;
+						if (my $ref = $sth->fetchrow_hashref()) {
+							my $sGreetMsg = $ref->{'greet'};
+							my $sAutomode = $ref->{'automode'};
+							unless (defined($sGreetMsg)) {
+								$sGreetMsg = "None";
+							}
+							unless (defined($sAutomode)) {
+								$sAutomode = "None";
+							}							
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"CHANNEL: $sChannel -- Automode: $sAutomode");
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"GREET MESSAGE: $sGreetMsg");
+							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
+						}
+					}
+				}
+				return ();
+			}
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+			return ();
+		}
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+		return ();
+	}	
+}
 1;

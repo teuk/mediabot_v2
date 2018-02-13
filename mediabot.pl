@@ -627,6 +627,47 @@ sub on_message_RPL_WHOISUSER(@) {
 					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"auth",($target_name));
 				}
 			}
+			case "userAccessChannel" {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"WHOIS userAccessChannel");
+				my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfoWhois(\%MAIN_CONF,$LOG,$dbh,"$ident\@$sHostname");
+				if (defined($WHOIS_VARS{'caller'}) && ($WHOIS_VARS{'caller'} ne "")) {
+					unless (defined($sMatchingUserHandle)) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"No Match!");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"access",($WHOIS_VARS{'channel'},"=".$target_name));
+					}
+					else {
+						my $iChannelUserLevelAccess = getUserChannelLevelByName(\%MAIN_CONF,$LOG,$dbh,$WHOIS_VARS{'channel'},$sMatchingUserHandle);
+						if ( $iChannelUserLevelAccess == 0 ) {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"No Match!");
+							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"access",($WHOIS_VARS{'channel'},"=".$target_name));
+						}
+						else {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"USER: sMatchingUserHandle ACCESS: $iChannelUserLevelAccess");
+							my $sQuery = "SELECT automode,greet FROM USER,USER_CHANNEL,CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel AND USER.id_user=USER_CHANNEL.id_user AND nickname like ? AND CHANNEL.name=?";
+							my $sth = $dbh->prepare($sQuery);
+							unless ($sth->execute($sMatchingUserHandle,$WHOIS_VARS{'channel'})) {
+								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+							}
+							else {
+								my $sAuthUserStr;
+								if (my $ref = $sth->fetchrow_hashref()) {
+									my $sGreetMsg = $ref->{'greet'};
+									my $sAutomode = $ref->{'automode'};
+									unless (defined($sGreetMsg)) {
+										$sGreetMsg = "None";
+									}
+									unless (defined($sAutomode)) {
+										$sAutomode = "None";
+									}							
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"CHANNEL: " . $WHOIS_VARS{'channel'} . " -- Automode: $sAutomode");
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"GREET MESSAGE: $sGreetMsg");
+									logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"access",($WHOIS_VARS{'channel'},"=".$target_name));
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 		$WHOIS_VARS{'nick'} = "";
 		$WHOIS_VARS{'sub'} = "";
