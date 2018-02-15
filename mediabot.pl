@@ -642,7 +642,7 @@ sub on_message_RPL_WHOISUSER(@) {
 							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"access",($WHOIS_VARS{'channel'},"=".$target_name));
 						}
 						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"USER: sMatchingUserHandle ACCESS: $iChannelUserLevelAccess");
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"USER: $sMatchingUserHandle ACCESS: $iChannelUserLevelAccess");
 							my $sQuery = "SELECT automode,greet FROM USER,USER_CHANNEL,CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel AND USER.id_user=USER_CHANNEL.id_user AND nickname like ? AND CHANNEL.name=?";
 							my $sth = $dbh->prepare($sQuery);
 							unless ($sth->execute($sMatchingUserHandle,$WHOIS_VARS{'channel'})) {
