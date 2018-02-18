@@ -12,7 +12,7 @@ use Mediabot::Channel;
 use Mediabot::User;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDebug mbRegister mbVersion);
+@EXPORT  = qw(getCommandCategory mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbRegister mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -106,6 +106,9 @@ sub mbCommandPublic(@) {
 												}
 		case "modcmd"				{ $bFound = 1;
 													mbDbModCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "showcmd"			{ $bFound = 1;
+													mbDbShowCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
@@ -236,6 +239,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "modcmd"				{ $bFound = 1;
 													mbDbModCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "showcmd"			{ $bFound = 1;
+													mbDbShowCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		else								{
 												
@@ -711,6 +717,39 @@ sub mbDbModCommand(@) {
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
 		}
+	}
+}
+
+# showcmd <command>
+sub mbDbShowCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+		my $sCommand = $tArgs[0];
+		my $sQuery = "SELECT * FROM PUBLIC_COMMANDS,USER WHERE PUBLIC_COMMANDS.id_user=USER.id_user AND command LIKE ?";
+		my $sth = $dbh->prepare($sQuery);
+		unless ($sth->execute($sCommand)) {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+		}
+		else {
+			if (my $ref = $sth->fetchrow_hashref()) {
+				my $sUserHandle = $ref->{'nickname'};
+				unless (defined($sUserHandle)) {
+					$sUserHandle = "Unknown";
+				}
+				my $sCreationDate = $ref->{'creation_date'};
+				my $sAction = $ref->{'action'};
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command : $sCommand Author : $sUserHandle Created : $sCreationDate");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Action : $sAction");
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
+			}
+		}
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcmd <command>");
+		return undef;
 	}
 }
 
