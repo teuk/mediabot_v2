@@ -256,17 +256,17 @@ sub mbDebug(@) {
 				else {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : debug <debug_level>");
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"debug_level 0 to 5");
-					return undef;
+					return ();
 				}
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
-				return undef;
+				return ();
 			}
 		}
 		else {
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
-			return undef;
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return ();
 		}
 	}
 }
@@ -294,7 +294,7 @@ sub mbQuit(@) {
 			}
 		}
 		else {
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg mediabot login username password");
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
 		}
 	}
