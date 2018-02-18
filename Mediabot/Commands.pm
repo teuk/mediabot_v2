@@ -12,7 +12,7 @@ use Mediabot::Channel;
 use Mediabot::User;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(mbCommandPrivate mbCommandPublic mbDbCommand mbDebug mbRegister mbVersion);
+@EXPORT  = qw(getCommandCategory mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDebug mbRegister mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -97,6 +97,9 @@ sub mbCommandPublic(@) {
 												}
 		case "access"				{ $bFound = 1;
 													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "addcmd"				{ $bFound = 1;
+													mbDbAddCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
@@ -218,6 +221,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "access"				{ $bFound = 1;
 													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "addcmd"				{ $bFound = 1;
+													mbDbAddCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		else								{
 												
@@ -465,6 +471,95 @@ sub mbDbCommand(@) {
 		}
 		else {
 			return 0;
+		}
+	}
+}
+
+sub getCommandCategory(@) {
+	my ($Config,$LOG,$dbh,$sCategory) = @_;
+	my %MAIN_CONF = %$Config;
+	my $sQuery = "SELECT id_public_commands_category FROM PUBLIC_COMMANDS_CATEGORY WHERE description LIKE ?";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($sCategory)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		if (my $ref = $sth->fetchrow_hashref()) {
+			return ($ref->{'id_public_commands_category'});
+		}
+		else {
+			return undef;
+		}
+	}
+}
+
+# addcmd <command> <message|action> <category> %c <command reply> 
+sub mbDbAddCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && (($tArgs[1] =~ /^message$/i) || ($tArgs[1] =~ /^action$/i)) && defined($tArgs[2]) && ($tArgs[2] ne "") && defined($tArgs[3]) && ($tArgs[3] ne "")) {
+					my $sCommand = $tArgs[0];
+					shift @tArgs;
+					my $sType = $tArgs[0];
+					shift @tArgs;
+					my $sCategory = $tArgs[0];
+					shift @tArgs;
+					my $id_public_commands_category = getCommandCategory(\%MAIN_CONF,$LOG,$dbh,$sCategory);
+					if (defined($id_public_commands_category)) {
+						my $sQuery = "SELECT command FROM PUBLIC_COMMANDS WHERE command LIKE ?";
+						my $sth = $dbh->prepare($sQuery);
+						unless ($sth->execute($sCommand)) {
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+						}
+						else {
+							unless (my $ref = $sth->fetchrow_hashref()) {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Adding command $sCommand [$sType] " . join (" ",@tArgs));
+								my $sAction;
+								if ( $sType =~ /^message$/i ) {
+									$sAction = "PRIVMSG %c ";
+								}
+								elsif ($sType =~ /^action$/i ) {
+									$sAction = "ACTION %c ";
+								}
+								$sAction .= join(" ",@tArgs);
+								$sQuery = "INSERT INTO PUBLIC_COMMANDS (id_user,id_public_commands_category,command,description,action) VALUES (?,?,?,?,?)";
+								$sth = $dbh->prepare($sQuery);
+								unless ($sth->execute($iMatchingUserId,$id_public_commands_category,$sCommand,$sCommand,$sAction)) {
+									log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+								}
+								else {
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand added");
+								}
+							}
+							else {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command already exists");
+							}
+						}
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Unknown category : $sCategory");
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax addcmd <command> <message|action> <category> <texte>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " addcmd command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " addcmd command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
 		}
 	}
 }
