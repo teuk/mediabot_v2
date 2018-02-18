@@ -12,7 +12,7 @@ use Mediabot::Channel;
 use Mediabot::User;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbRemCommand mbDebug mbRegister mbVersion);
+@EXPORT  = qw(getCommandCategory mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDebug mbRegister mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -103,6 +103,9 @@ sub mbCommandPublic(@) {
 												}
 		case "remcmd"				{ $bFound = 1;
 													mbDbRemCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "modcmd"				{ $bFound = 1;
+													mbDbModCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
@@ -230,6 +233,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "remcmd"				{ $bFound = 1;
 													mbDbRemCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "modcmd"				{ $bFound = 1;
+													mbDbModCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		else								{
 												
@@ -499,7 +505,7 @@ sub getCommandCategory(@) {
 	}
 }
 
-# addcmd <command> <message|action> <category> %c <command reply> 
+# addcmd <command> <message|action> <category> <command reply> 
 sub mbDbAddCommand(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
@@ -623,6 +629,84 @@ sub mbDbRemCommand(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " remcmd command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# modcmd <command> <message|action> <category> <command reply> 
+sub mbDbModCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && (($tArgs[1] =~ /^message$/i) || ($tArgs[1] =~ /^action$/i)) && defined($tArgs[2]) && ($tArgs[2] ne "") && defined($tArgs[3]) && ($tArgs[3] ne "")) {
+					my $sCommand = $tArgs[0];
+					shift @tArgs;
+					my $sType = $tArgs[0];
+					shift @tArgs;
+					my $sCategory = $tArgs[0];
+					shift @tArgs;
+					my $sQuery = "SELECT id_public_commands,id_user FROM PUBLIC_COMMANDS WHERE command LIKE ?";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sCommand)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						if (my $ref = $sth->fetchrow_hashref()) {
+							my $id_user = $ref->{'id_user'};
+							my $id_public_commands = $ref->{'id_public_commands'};
+							if (($id_user == $iMatchingUserId) || checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+								my $id_public_commands_category = getCommandCategory(\%MAIN_CONF,$LOG,$dbh,$sCategory);
+								if (defined($id_public_commands_category)) {
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Modifying command $sCommand [$sType] " . join (" ",@tArgs));
+									my $sAction;
+									if ( $sType =~ /^message$/i ) {
+										$sAction = "PRIVMSG %c ";
+									}
+									elsif ($sType =~ /^action$/i ) {
+										$sAction = "ACTION %c ";
+									}
+									$sAction .= join(" ",@tArgs);
+									$sQuery = "UPDATE PUBLIC_COMMANDS SET id_public_commands_category=?,action=? WHERE id_public_commands=?";
+									$sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($id_public_commands_category,$sAction,$id_public_commands)) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+									}
+									else {
+										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand modified");
+									}
+								}
+								else {
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Unknown category : $sCategory");
+								}
+							}
+							else {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command belongs to another user");
+							}
+						}
+						else {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
+						}
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax modcmd <command> <message|action> <category> <text>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " modcmd command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " modcmd command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
