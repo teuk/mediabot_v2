@@ -10,6 +10,7 @@ use Mediabot::Core;
 use Mediabot::Database;
 use Mediabot::Channel;
 use Mediabot::User;
+use Mediabot::Plugins;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbRegister mbVersion);
@@ -117,7 +118,10 @@ sub mbCommandPublic(@) {
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
 												}
 		else								{
-													$bFound = mbDbCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
+													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
+													unless ( $bFound ) {
+														$bFound = mbDbCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
+													}
 												}
 	}
 	unless ( $bFound ) {
