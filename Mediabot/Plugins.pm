@@ -5,6 +5,7 @@ use     vars qw(@EXPORT @ISA);
 require Exporter;
 
 use Switch;
+use Mediabot::Common;
 use Mediabot::Core;
 
 @ISA     = qw(Exporter);
@@ -22,4 +23,5 @@ sub mbPluginCommand(@) {
 													
 												}
 	}
+	return $bFound;
 }

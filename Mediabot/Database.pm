@@ -44,7 +44,7 @@ sub dbConnect(@) {
 	unless ($sth->execute() ) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"dbConnect() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 	}
-	
+	$sth->finish;
 	return $dbh;
 }
 

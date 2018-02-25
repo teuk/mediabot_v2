@@ -25,9 +25,12 @@ sub userCount(@) {
 	else {
 		if (my $ref = $sth->fetchrow_hashref()) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"userCount() " . $ref->{'nbUser'});
-			return($ref->{'nbUser'});
+			my $nbUser = $ref->{'nbUser'};
+			$sth->finish;
+			return($nbUser);
 		}
 		else {
+			$sth->finish;
 			return 0;
 		}
 	}
@@ -43,9 +46,12 @@ sub getIdUserLevel(@) {
 	}
 	else {
 		if (my $ref = $sth->fetchrow_hashref()) {
-			return($ref->{'id_user_level'});
+			my $id_user_level = $ref->{'id_user_level'};
+			$sth->finish;
+			return $id_user_level;
 		}
 		else {
+			$sth->finish;
 			return undef;
 		}
 	}
@@ -70,6 +76,7 @@ sub userAdd(@) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"userAdd() Added user : $sUserHandle with hostmask : $sHostmask id_user : $id_user as $sLevel password set : yes");
 			return ($id_user);
 		}
+		$sth->finish;
 	}
 	else {
 		my $sQuery = "INSERT INTO USER (hostmasks,nickname,id_user_level) VALUES (?,?,?)";
@@ -83,6 +90,7 @@ sub userAdd(@) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Added user : $sUserHandle with hostmask : $sHostmask id_user : $id_user as $sLevel password set : no");
 			return ($id_user);
 		}
+		$sth->finish;
 	}
 }
 
@@ -144,7 +152,7 @@ sub getNickInfo(@) {
 			}
 		}
 	}
-	
+	$sth->finish;
 	if (defined($iMatchingUserId)) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getNickInfo() iMatchingUserId : $iMatchingUserId");
 	}
@@ -205,6 +213,7 @@ sub checkAuth(@) {
 			return 0;
 		}
 	}
+	$sth->finish;
 }
 
 # ident username password
@@ -215,6 +224,7 @@ sub checkAuthByUser(@) {
 	my $sth = $dbh->prepare($sCheckAuthQuery);
 	unless ($sth->execute($sUserHandle,$sPassword)) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"checkAuthByUser() SQL Error : " . $DBI::errstr . " Query : " . $sCheckAuthQuery);
+		$sth->finish;
 		return 0;
 	}
 	else {	
@@ -232,12 +242,15 @@ sub checkAuthByUser(@) {
 				my $sth = $dbh->prepare($Query);
 				unless ($sth->execute($sNewHostmasks,$id_user)) {
 					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"checkAuthByUser() SQL Error : " . $DBI::errstr . " Query : " . $Query);
+					$sth->finish;
 					return (0,0);
 				}
+				$sth->finish;
 				return ($id_user,0);
 			}
 		}
 		else {
+			$sth->finish;
 			return (0,0);
 		}
 	}
@@ -256,13 +269,16 @@ sub checkUserLevel(@) {
 		if (my $ref = $sth->fetchrow_hashref()) {
 			my $level = $ref->{'level'};
 			if ( $iUserLevel <= $level ) {
+				$sth->finish;
 				return 1;
 			}
 			else {
+				$sth->finish;
 				return 0;
 			}
 		}
 		else {
+			$sth->finish;
 			return 0;
 		}
 	}
@@ -278,9 +294,12 @@ sub getUserLevel(@) {
 	}
 	else {
 		if (my $ref = $sth->fetchrow_hashref()) {
-			return($ref->{'description'});
+			my $sDescription = $ref->{'description'};
+			$sth->finish;
+			return $sDescription;
 		}
 		else {
+			$sth->finish;
 			return undef;
 		}
 	}
@@ -296,9 +315,12 @@ sub getIdUser(@) {
 	}
 	else {
 		if (my $ref = $sth->fetchrow_hashref()) {
-			return($ref->{'id_user'});
+			my $id_user = $ref->{'id_user'};
+			$sth->finish;
+			return $id_user;
 		}
 		else {
+			$sth->finish;
 			return undef;
 		}
 	}
@@ -317,9 +339,11 @@ sub getIdUserChannelLevel(@) {
 			my $id_user = $ref->{'id_user'};
 			my $level = $ref->{'level'};
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getIdUserChannelLevel() $id_user $level");
+			$sth->finish;
 			return ($id_user,$level);
 		}
 		else {
+			$sth->finish;
 			return (undef,undef);
 		}
 	}
@@ -356,6 +380,7 @@ sub logBot(@) {
 		noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"logBot() $sNoticeMsg");
 	}
+	$sth->finish;
 }
 
 #login username password
@@ -431,6 +456,7 @@ sub userPass(@) {
 			my $sth = $dbh->prepare($sQuery);
 			unless ($sth->execute($tArgs[0],$iMatchingUserId)) {
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				$sth->finish;
 				return 0;
 			}
 			else {
@@ -440,6 +466,7 @@ sub userPass(@) {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Password set.");
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You may now login with /msg " . $irc->nick_folded . " login $sMatchingUserHandle password");
 				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"pass","Success");
+				$sth->finish;
 				return 1;
 			}
 		}
@@ -463,6 +490,7 @@ sub userNewPass(@) {
 			my $sth = $dbh->prepare($sQuery);
 			unless ($sth->execute($tArgs[0],$iMatchingUserId)) {
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				$sth->finish;
 				return 0;
 			}
 			else {
@@ -471,6 +499,7 @@ sub userNewPass(@) {
 				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Password set.");
 				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"newpass","Success");
+				$sth->finish;
 				return 1;
 			}
 		}
@@ -700,6 +729,7 @@ sub addChannel(@) {
 							my $sth = $dbh->prepare($sQuery);
 							unless ($sth->execute($sChannel,$sChannel)) {
 								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+								$sth->finish;
 								return undef;
 							}
 							else {
@@ -715,6 +745,7 @@ sub addChannel(@) {
 								else {
 									log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"registerChannel failed $sChannel $sUser");
 								}
+								$sth->finish;
 								return $id_channel;
 							}
 						}
@@ -781,10 +812,12 @@ sub channelSet(@) {
 																			my $sth = $dbh->prepare($sQuery);
 																			unless ($sth->execute($tArgs[1],$id_channel)) {
 																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				$sth->finish;
 																				return undef;
 																			}
 																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel key " . $tArgs[1]);
 																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																			$sth->finish;
 																			return $id_channel;
 																		}
 								case "chanmode"			{
@@ -792,10 +825,12 @@ sub channelSet(@) {
 																			my $sth = $dbh->prepare($sQuery);
 																			unless ($sth->execute($tArgs[1],$id_channel)) {
 																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				$sth->finish;
 																				return undef;
 																			}
 																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel chanmode " . $tArgs[1]);
 																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																			$sth->finish;
 																			return $id_channel;
 																		}
 								case "auto_join"		{
@@ -814,10 +849,12 @@ sub channelSet(@) {
 																			my $sth = $dbh->prepare($sQuery);
 																			unless ($sth->execute($bAutoJoin,$id_channel)) {
 																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				$sth->finish;
 																				return undef;
 																			}
 																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel auto_join " . $tArgs[1]);
 																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																			$sth->finish;
 																			return $id_channel;
 																		}
 								case "description"	{
@@ -827,10 +864,12 @@ sub channelSet(@) {
 																				my $sth = $dbh->prepare($sQuery);
 																				unless ($sth->execute(join(" ",@tArgs),$id_channel)) {
 																					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																					$sth->finish;
 																					return undef;
 																				}
 																				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel description " . join(" ",@tArgs));
 																				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,"description",@tArgs));
+																				$sth->finish;
 																				return $id_channel;
 																			}
 																			else {
@@ -911,10 +950,12 @@ sub userModinfo(@) {
 																						my $sth = $dbh->prepare($sQuery);
 																						unless ($sth->execute($sAutomode,$id_user,$id_channel)) {
 																							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																							$sth->finish;
 																							return undef;
 																						}
 																						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set automode $sAutomode on $sChannel for " . $tArgs[1]);
 																						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
+																						$sth->finish;
 																						return $id_channel;
 																													}
 																						
@@ -931,10 +972,12 @@ sub userModinfo(@) {
 																					my $sth = $dbh->prepare($sQuery);
 																					unless ($sth->execute($sGreet,$id_user,$id_channel)) {
 																						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																						$sth->finish;
 																						return undef;
 																					}
 																					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set greet ($sGreet) on $sChannel for $sUser");
 																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",("greet $sUser",@tArgs));
+																					$sth->finish;
 																					return $id_channel;
 																				}
 										case "level"				{
@@ -945,10 +988,12 @@ sub userModinfo(@) {
 																							my $sth = $dbh->prepare($sQuery);
 																							unless ($sth->execute($tArgs[2]	,$id_user,$id_channel)) {
 																								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																								$sth->finish;
 																								return undef;
 																							}
 																							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set level " . $tArgs[2] . " on $sChannel for $sUser");
 																							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
+																							$sth->finish;
 																							return $id_channel;
 																						}
 																						else {
@@ -1034,6 +1079,7 @@ sub userOnJoin(@) {
 				}
 			}
 		}
+		$sth->finish;
 	}
 }
 
@@ -1113,6 +1159,7 @@ sub channelJoin(@) {
 							joinChannel($irc,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,$sChannel,undef);
 						}
 						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"join","");
+						$sth->finish;
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
@@ -1170,6 +1217,7 @@ sub channelAddUser(@) {
 										else {
 											logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"add",@tArgs);
 										}
+										$sth->finish;
 									}
 									else {
 										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't add a user with a level equal or greater than yours");
@@ -1238,6 +1286,7 @@ sub channelDelUser(@) {
 										else {
 											logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"del",@tArgs);
 										}
+										$sth->finish;
 									}
 									else {
 										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't del a user with a level equal or greater than yours");
@@ -1284,10 +1333,12 @@ sub registerChannel(@) {
 	my $sth = $dbh->prepare($sQuery);
 	unless ($sth->execute($id_user,$id_channel)) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+		$sth->finish;
 		return 0;
 	}
 	else {
 		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"registerChannel","$sNick registered user : $id_user level 500 on channel : $id_channel");
+		$sth->finish;
 		return 1;
 	}
 }
@@ -1304,13 +1355,16 @@ sub checkUserChannelLevel(@) {
 		if (my $ref = $sth->fetchrow_hashref()) {
 			my $iLevel = $ref->{'level'};
 			if ( $iLevel >= $level ) {
+				$sth->finish;
 				return 1;
 			}
 			else {
+				$sth->finish;
 				return 0;
 			}
 		}
 		else {
+			$sth->finish;
 			return 0;
 		}
 	}	
@@ -1327,9 +1381,11 @@ sub getUserChannelLevel(@) {
 	else {
 		if (my $ref = $sth->fetchrow_hashref()) {
 			my $iLevel = $ref->{'level'};
+			$sth->finish;
 			return $iLevel;
 		}
 		else {
+			$sth->finish;
 			return 0;
 		}
 	}	
@@ -1363,6 +1419,7 @@ sub purgeChannel(@) {
 								$sth = $dbh->prepare($sQuery);
 								unless ($sth->execute($id_channel)) {
 									log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+									$sth->finish;
 									return undef;
 								}
 								else {
@@ -1371,6 +1428,7 @@ sub purgeChannel(@) {
 									$sth = $dbh->prepare($sQuery);
 									unless ($sth->execute($id_channel)) {
 										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+										$sth->finish;
 										return undef;
 									}
 									else {
@@ -1379,6 +1437,7 @@ sub purgeChannel(@) {
 										$sth = $dbh->prepare($sQuery);
 										unless ($sth->execute($id_channel,$sChannel,$sDecription,$sKey,$sChanmode,$bAutoJoin)) {
 											log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+											$sth->finish;
 											return undef;
 										}
 										else {
@@ -1390,6 +1449,7 @@ sub purgeChannel(@) {
 								}
 							}
 							else {
+								$sth->finish;
 								return undef;
 							}
 						}
@@ -1824,7 +1884,7 @@ sub userChannelInfo(@) {
 			}
 			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chaninfo",@tArgs);
 		}
-		
+		$sth->finish;
 	}
 	else {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
@@ -1853,6 +1913,7 @@ sub userCstat(@) {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Utilisateurs authentifiés : " . $sAuthUserStr);
 					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"cstat",@tArgs);
 				}
+				$sth->finish;
 			}
 			else {
 				my $sNoticeMsg = $message->prefix . " cstat command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
@@ -1903,6 +1964,7 @@ sub userWhoAmI(@) {
 				}
 			}
 			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whoami",@tArgs);
+			$sth->finish;
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " whoami command attempt (user $sMatchingUserHandle is not logged in)";
@@ -1963,11 +2025,12 @@ sub getNickInfoWhois(@) {
 					if (defined($ref->{'info2'})) {
 						$sMatchingUserInfo2 = $ref->{'info2'};
 					}
+					$sth2->finish;
 				}
 			}
 		}
 	}
-	
+	$sth->finish;
 	if (defined($iMatchingUserId)) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getNickInfoWhois() iMatchingUserId : $iMatchingUserId");
 	}
@@ -2071,6 +2134,7 @@ sub getUserChannelLevelByName(@) {
 		}
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"getUserChannelLevelByName() iChannelUserLevel = $iChannelUserLevel");
 	}
+	$sth->finish;
 	return $iChannelUserLevel;
 }
 
@@ -2123,6 +2187,7 @@ sub userAccessChannel(@) {
 							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
 						}
 					}
+					$sth->finish;
 				}
 				return ();
 			}

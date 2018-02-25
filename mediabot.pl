@@ -20,6 +20,7 @@ use Date::Manip;
 use Date::Parse;
 use Switch;
 use IO::Async::Loop;
+use IO::Async::Timer::Periodic;
 use Net::Async::IRC;
 use String::IRC;
 use Data::Dumper;
@@ -103,6 +104,7 @@ sub usage(@);
 # +---------------------------------------------------------------------------+
 # !          IRC FUNCTIONS                                                    !
 # +---------------------------------------------------------------------------+
+sub on_timer_tick(@);
 sub on_login(@);
 sub on_private(@);
 sub on_motd(@);
@@ -209,6 +211,7 @@ else {
 		$CONN_SERVER = $ref->{'server_hostname'};
 	}
 }
+$sth->finish;
 
 unless (defined($MAIN_CONF{'connection.CONN_SERVER_NETWORK'}) && ($MAIN_CONF{'connection.CONN_SERVER_NETWORK'} ne "")) {
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No CONN_SERVER_NETWORK defined in $CONFIG_FILE");
@@ -222,6 +225,14 @@ unless (defined($CONN_SERVER) && ($CONN_SERVER ne "")) {
 }
 
 my $loop = IO::Async::Loop->new;
+
+my $timer = IO::Async::Timer::Periodic->new(
+    interval => 5,
+    on_tick => \&on_timer_tick,
+);
+
+#$loop->add( $timer );
+#$timer->start;
 
 my $irc = Net::Async::IRC->new(
   on_message_text => \&on_private,
@@ -250,6 +261,8 @@ my $irc = Net::Async::IRC->new(
 
 $loop->add( $irc );
 
+
+
 my $sConnectionNick = $MAIN_CONF{'connection.CONN_NICK'};
 if (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection.CONN_USERMODE'} =~ /x/)) {
 	my @chars = ("A".."Z", "a".."z");
@@ -271,6 +284,14 @@ $loop->run;
 # +---------------------------------------------------------------------------+
 # !          SUBS                                                             !
 # +---------------------------------------------------------------------------+
+
+sub on_timer_tick(@) {
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"on_timer_tick() tick");
+	unless ($irc->is_connected) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Disconnected from server");
+		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
+	}
+}
 
 sub usage(@) {
         my ($strErr) = @_;
@@ -317,6 +338,8 @@ sub on_login(@) {
   unless ((($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection.CONN_USERMODE'} =~ /x/)) || (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 2) && defined($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'}) && ($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'} ne ""))) {
 		joinChannels($dbh,$self,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG);
 	}
+	$loop->add( $timer );
+	$timer->start;
 }
 
 sub on_private(@) {
@@ -619,6 +642,7 @@ sub on_message_RPL_WHOISUSER(@) {
 							else {
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'caller'},"$target_name has been authenticated. User $sMatchingUserHandle ($iMatchingUserLevelDesc)");
 							}
+							$sth->finish;
 						}
 					}
 					else {
@@ -664,6 +688,7 @@ sub on_message_RPL_WHOISUSER(@) {
 									logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$WHOIS_VARS{'message'},undef,"access",($WHOIS_VARS{'channel'},"=".$target_name));
 								}
 							}
+							$sth->finish;
 						}
 					}
 				}

@@ -35,6 +35,7 @@ sub joinChannels(@) {
 			log_message($MAIN_PROG_DEBUG,$LOG,0,"No channel to auto join");
 		}
 	}
+	$sth->finish;
 }
 
 sub joinChannel(@) {
@@ -80,6 +81,7 @@ sub getConsoleChan(@) {
 			return (undef,undef,undef,undef);
 		}
 	}
+	$sth->finish;
 }
 
 sub noticeConsoleChan(@) {
@@ -108,6 +110,7 @@ sub getIdChannel(@) {
 			$id_channel = $ref->{'id_channel'};
 		}
 	}
+	$sth->finish;
 	return $id_channel;
 }
 

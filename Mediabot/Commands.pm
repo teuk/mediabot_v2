@@ -501,6 +501,7 @@ sub mbDbCommand(@) {
 			return 0;
 		}
 	}
+	$sth->finish;
 }
 
 sub getCommandCategory(@) {
@@ -519,6 +520,7 @@ sub getCommandCategory(@) {
 			return undef;
 		}
 	}
+	$sth->finish;
 }
 
 # addcmd <command> <message|action> <category> <command reply> 
@@ -567,6 +569,7 @@ sub mbDbAddCommand(@) {
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command already exists");
 							}
 						}
+						$sth->finish;
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Unknown category : $sCategory");
@@ -631,6 +634,7 @@ sub mbDbRemCommand(@) {
 							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
 						}
 					}
+					$sth->finish;
 				}
 				else {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax remcmd <command>");
@@ -709,6 +713,7 @@ sub mbDbModCommand(@) {
 							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
 						}
 					}
+					$sth->finish;
 				}
 				else {
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax modcmd <command> <message|action> <category> <text>");
@@ -756,6 +761,7 @@ sub mbDbShowCommand(@) {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
 			}
 		}
+		$sth->finish;
 	}
 	else {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcmd <command>");
