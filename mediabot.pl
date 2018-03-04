@@ -100,6 +100,8 @@ my %WHOIS_VARS;
 
 # Core functions
 sub usage(@);
+sub catch_hup(@);
+sub catch_term(@);
 
 # +---------------------------------------------------------------------------+
 # !          IRC FUNCTIONS                                                    !
@@ -133,6 +135,7 @@ sub on_message_RPL_WHOISUSER(@);
 # +---------------------------------------------------------------------------+
 # !          MAIN                                                             !
 # +---------------------------------------------------------------------------+
+my $sFullParams = join(" ",@ARGV);
 
 # Check command line parameters
 my $result = GetOptions (
@@ -170,7 +173,7 @@ if ( $MAIN_PROG_DAEMON != 0 ) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"Starting in daemon mode");
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"Daemon mode actions starting");
 		
-		chdir '/'                 or die "Can't chdir to /: $!";
+		#chdir '/'                 or die "Can't chdir to /: $!";
 		umask 0;
 		open STDIN, '/dev/null'   or die "Can't read /dev/null: $!";
 		open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
@@ -279,6 +282,13 @@ $irc->login(
   on_login => \&on_login,
 )->get;
 
+# Reload config
+$SIG{HUP} = \&catch_hup;
+
+# Exit properly
+$SIG{TERM} = \&catch_term;
+
+# Start main loop
 $loop->run;
 
 # +---------------------------------------------------------------------------+
@@ -511,6 +521,14 @@ sub on_message_PRIVMSG(@) {
     	if ( $sCommand =~ /debug/i) {
     		%MAIN_CONF = mbDebug($cfg,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,@tArgs);
     	}
+    	elsif ( $sCommand =~ /restart/i) {
+    		if ($MAIN_PROG_DAEMON) {
+    			mbRestart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,($sFullParams));
+    		}
+    		else {
+    			botNotice(\%MAIN_CONF,$LOG,$dbh,$self,$who,"restart command can only be used in daemon mode (use --daemon to launch the bot)");
+    		}
+    	}
     	else {
     		%WHOIS_VARS = mbCommandPrivate(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
     	}
@@ -699,5 +717,22 @@ sub on_message_RPL_WHOISUSER(@) {
 		$WHOIS_VARS{'caller'} = "";
 		$WHOIS_VARS{'channel'} = "";
 		$WHOIS_VARS{'message'} = "";
+	}
+}
+
+sub catch_hup(@) {
+	my ($signame) = @_;
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Received signal $signame");
+}
+
+sub catch_term(@) {
+	my ($signame) = @_;
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Received signal $signame");
+	if ($irc->is_connected) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Quit IRC");
+		$irc->send_message( "QUIT", undef, $MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'} );
+	}
+	else {
+		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
 	}
 }

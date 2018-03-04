@@ -163,6 +163,7 @@ MAIN_LOG_FILE=$INSTALL_DIR/mediabot.log
 MAIN_PROG_BIRTHDATE=$(date +%s)
 MAIN_PROG_TZ=America/New_York
 MAIN_PROG_URL=http://www.domain.tld/mediabot
+MAIN_PROG_QUIT_MSG=So long and thanks for all the fish !
 MAIN_PROG_DEBUG=0
 MAIN_PROG_MAXLEN=400
 MAIN_SQL_FLOOD_PROTECT_COUNT=10

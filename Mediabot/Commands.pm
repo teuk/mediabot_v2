@@ -4,6 +4,7 @@ use     strict;
 use     vars qw(@EXPORT @ISA);
 require Exporter;
 
+use POSIX 'setsid';
 use Switch;
 use Mediabot::Common;
 use Mediabot::Core;
@@ -13,7 +14,7 @@ use Mediabot::User;
 use Mediabot::Plugins;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbRegister mbVersion);
+@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbRegister mbRestart mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -273,6 +274,7 @@ sub mbVersion(@) {
 	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$MAIN_CONF{'main.MAIN_PROG_NAME'} . " v$MAIN_PROG_VERSION ©2017-2018 TeuK");
 }
 
+# debug <debug_level>
 sub mbDebug(@) {
 	my ($cfg,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
@@ -305,6 +307,40 @@ sub mbDebug(@) {
 	}
 }
 
+# restart
+sub mbRestart(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Owner")) {
+				my $iCHildPid;
+				if (defined($iCHildPid = fork())) {
+					unless ($iCHildPid) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Restart request from $sMatchingUserHandle");
+						setsid;
+						exec "./mb_restart.sh",$tArgs[0];
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Restarting bot");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"restart",($MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'}));
+						$irc->send_message( "QUIT", undef, $MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'} );
+					}
+				}
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
 # quit <quit message>
 sub mbQuit(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
@@ -319,8 +355,8 @@ sub mbQuit(@) {
 				#else {
 				#	$irc->write("QUIT\x0d\x0a");
 				#}
-				$irc->send_message( "QUIT", undef, join(" ",@tArgs) );
 				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"quit",@tArgs);
+				$irc->send_message( "QUIT", undef, join(" ",@tArgs) );
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
