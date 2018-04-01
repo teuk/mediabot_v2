@@ -777,19 +777,30 @@ sub mbDbShowCommand(@) {
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 		my $sCommand = $tArgs[0];
-		my $sQuery = "SELECT * FROM PUBLIC_COMMANDS,USER WHERE PUBLIC_COMMANDS.id_user=USER.id_user AND command LIKE ?";
+		my $sQuery = "SELECT * FROM PUBLIC_COMMANDS WHERE command LIKE ?";
 		my $sth = $dbh->prepare($sQuery);
 		unless ($sth->execute($sCommand)) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 		}
 		else {
 			if (my $ref = $sth->fetchrow_hashref()) {
-				my $sUserHandle = $ref->{'nickname'};
-				unless (defined($sUserHandle)) {
-					$sUserHandle = "Unknown";
-				}
+				my $id_user = $ref->{'id_user'};
+				my $sUserHandle = "Unknown";
 				my $sCreationDate = $ref->{'creation_date'};
 				my $sAction = $ref->{'action'};
+				if (defined($id_user)) {
+					$sQuery = "SELECT * FROM USER WHERE id_user=?";
+					my $sth2 = $dbh->prepare($sQuery);
+					unless ($sth2->execute($id_user)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						if (my $ref2 = $sth2->fetchrow_hashref()) {
+							$sUserHandle = $ref2->{'nickname'};
+						}
+					}
+					$sth2->finish;
+				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command : $sCommand Author : $sUserHandle Created : $sCreationDate");
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Action : $sAction");
 			}
