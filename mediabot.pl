@@ -136,11 +136,12 @@ sub on_message_RPL_WHOISUSER(@);
 # !          MAIN                                                             !
 # +---------------------------------------------------------------------------+
 my $sFullParams = join(" ",@ARGV);
-
+my $sServer;
 # Check command line parameters
 my $result = GetOptions (
         "conf=s" => \$CONFIG_FILE,
         "daemon" => \$MAIN_PROG_DAEMON,
+        "server=s" => \$sServer,
 );
 
 unless (defined($CONFIG_FILE)) {
@@ -203,28 +204,33 @@ dbCheckTables(\%MAIN_CONF,$LOG,$dbh);
 # Log out all user at start
 dbLogoutUsers(\%MAIN_CONF,$LOG,$dbh);
 
-# Pick a server in db default on $CONN_SERVER_NETWORK
-my $sQuery = "SELECT SERVERS.server_hostname FROM NETWORK,SERVERS WHERE NETWORK.id_network=SERVERS.id_network AND NETWORK.network_name like ? ORDER BY RAND() LIMIT 1";
-my $sth = $dbh->prepare($sQuery);
-unless ($sth->execute($MAIN_CONF{'connection.CONN_SERVER_NETWORK'})) {
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Startup select SERVER, SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-}
-else {	
-	if (my $ref = $sth->fetchrow_hashref()) {
-		$CONN_SERVER = $ref->{'server_hostname'};
+unless (defined($sServer) && ($sServer ne "")) {
+	# Pick a server in db default on $CONN_SERVER_NETWORK
+	my $sQuery = "SELECT SERVERS.server_hostname FROM NETWORK,SERVERS WHERE NETWORK.id_network=SERVERS.id_network AND NETWORK.network_name like ? ORDER BY RAND() LIMIT 1";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($MAIN_CONF{'connection.CONN_SERVER_NETWORK'})) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Startup select SERVER, SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {	
+		if (my $ref = $sth->fetchrow_hashref()) {
+			$CONN_SERVER = $ref->{'server_hostname'};
+		}
+	}
+	$sth->finish;
+
+	unless (defined($MAIN_CONF{'connection.CONN_SERVER_NETWORK'}) && ($MAIN_CONF{'connection.CONN_SERVER_NETWORK'} ne "")) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No CONN_SERVER_NETWORK defined in $CONFIG_FILE");
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Run ./configure at first use or ./configure -s to set it properly");
+		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,4);
+	}
+	unless (defined($CONN_SERVER) && ($CONN_SERVER ne "")) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No server found for network " . $MAIN_CONF{'connection.CONN_SERVER_NETWORK'} . " defined in $CONFIG_FILE");
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Run ./configure at first use or ./configure -s to set it properly");
+		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,4);
 	}
 }
-$sth->finish;
-
-unless (defined($MAIN_CONF{'connection.CONN_SERVER_NETWORK'}) && ($MAIN_CONF{'connection.CONN_SERVER_NETWORK'} ne "")) {
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No CONN_SERVER_NETWORK defined in $CONFIG_FILE");
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Run ./configure at first use or ./configure -s to set it properly");
-	clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,4);
-}
-unless (defined($CONN_SERVER) && ($CONN_SERVER ne "")) {
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No server found for network " . $MAIN_CONF{'connection.CONN_SERVER_NETWORK'} . " defined in $CONFIG_FILE");
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Run ./configure at first use or ./configure -s to set it properly");
-	clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,4);
+else {
+	$CONN_SERVER = $sServer;
 }
 
 my $loop = IO::Async::Loop->new;
@@ -518,20 +524,30 @@ sub on_message_PRIVMSG(@) {
 		my ($sCommand,@tArgs) = split(/\s+/,$what);   
     $sCommand =~ tr/A-Z/a-z/;
     if (defined($sCommand) && ($sCommand ne "")) {
-    	if ( $sCommand =~ /debug/i) {
-    		%MAIN_CONF = mbDebug($cfg,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,@tArgs);
-    	}
-    	elsif ( $sCommand =~ /restart/i) {
-    		if ($MAIN_PROG_DAEMON) {
-    			mbRestart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,($sFullParams));
-    		}
-    		else {
-    			botNotice(\%MAIN_CONF,$LOG,$dbh,$self,$who,"restart command can only be used in daemon mode (use --daemon to launch the bot)");
-    		}
-    	}
-    	else {
-    		%WHOIS_VARS = mbCommandPrivate(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
-    	}
+    	switch($sCommand) {
+    		case "debug"			{ 
+														%MAIN_CONF = mbDebug($cfg,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,@tArgs);
+													}
+				case "restart"		{ 
+														if ($MAIN_PROG_DAEMON) {
+										    			mbRestart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,($sFullParams));
+										    		}
+										    		else {
+										    			botNotice(\%MAIN_CONF,$LOG,$dbh,$self,$who,"restart command can only be used in daemon mode (use --daemon to launch the bot)");
+										    		}
+													}
+				case "jump"				{ 
+														if ($MAIN_PROG_DAEMON) {
+										    			mbJump(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$who,($sFullParams,$tArgs[0]));
+										    		}
+										    		else {
+										    			botNotice(\%MAIN_CONF,$LOG,$dbh,$self,$who,"jump command can only be used in daemon mode (use --daemon to launch the bot)");
+										    		}
+													}
+	    	else {
+	    		%WHOIS_VARS = mbCommandPrivate(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
+	    	}
+	    }
     }
 	}	
 }

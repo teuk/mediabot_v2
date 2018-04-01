@@ -14,7 +14,7 @@ use Mediabot::User;
 use Mediabot::Plugins;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbRegister mbRestart mbVersion);
+@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -327,6 +327,49 @@ sub mbRestart(@) {
 						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"restart",($MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'}));
 						$irc->send_message( "QUIT", undef, $MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'} );
 					}
+				}
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# jump
+sub mbJump(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Owner")) {
+				my $sServer = pop @tArgs;
+				my $sFullParams = join(" ",@tArgs);
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					$sFullParams =~ s/\-\-server=[^ ]*//g;
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sFullParams);
+					my $iCHildPid;
+					if (defined($iCHildPid = fork())) {
+						unless ($iCHildPid) {
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Jump request from $sMatchingUserHandle");
+							setsid;
+							exec "./mb_restart.sh",($sFullParams,"--server=$sServer");
+						}
+						else {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Jumping to $sServer");
+							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"jump",($sServer));
+							$irc->send_message( "QUIT", undef, "Changing server" );
+						}
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: jump <server>");
 				}
 			}
 			else {
