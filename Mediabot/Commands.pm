@@ -118,6 +118,9 @@ sub mbCommandPublic(@) {
 		case "version"			{ $bFound = 1;
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
 												}
+		case "chanstatlines"	{ $bFound = 1;
+														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													}
 		else								{
 													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
 													unless ( $bFound ) {

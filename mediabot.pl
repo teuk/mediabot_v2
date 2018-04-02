@@ -205,7 +205,7 @@ dbCheckTables(\%MAIN_CONF,$LOG,$dbh);
 dbLogoutUsers(\%MAIN_CONF,$LOG,$dbh);
 
 unless (defined($sServer) && ($sServer ne "")) {
-	# Pick a server in db default on $CONN_SERVER_NETWORK
+	# Pick a server in db default on CONN_SERVER_NETWORK
 	my $sQuery = "SELECT SERVERS.server_hostname FROM NETWORK,SERVERS WHERE NETWORK.id_network=SERVERS.id_network AND NETWORK.network_name like ? ORDER BY RAND() LIMIT 1";
 	my $sth = $dbh->prepare($sQuery);
 	unless ($sth->execute($MAIN_CONF{'connection.CONN_SERVER_NETWORK'})) {
