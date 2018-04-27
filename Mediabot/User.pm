@@ -1075,7 +1075,7 @@ sub userOnJoin(@) {
 				}
 				my $sGreetChan = $ref->{'greet'};
 				if (defined($sGreetChan) && ($sGreetChan ne "")) {
-					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sGreetChan);
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"($sMatchingUserHandle) $sGreetChan");
 				}
 			}
 		}
@@ -1747,7 +1747,8 @@ sub userKickChannel(@) {
 							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a kick $sChannel command");
 							my $sKickNick = $tArgs[0];
 							shift @tArgs;
-							$irc->send_message("KICK",undef,($sChannel,$sKickNick,join(" ",@tArgs)));
+							my $sKickReason = join(" ",@tArgs);
+							$irc->send_message("KICK",undef,($sChannel,$sKickNick,"($sMatchingUserHandle) $sKickReason"));
 							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"kick",($sKickNick,@tArgs));
 							return $id_channel;
 						}
