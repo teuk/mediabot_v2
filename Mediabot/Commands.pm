@@ -121,6 +121,9 @@ sub mbCommandPublic(@) {
 		case "chanstatlines"	{ $bFound = 1;
 														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 													}
+		case "countcmd"			{ $bFound = 1;
+														mbCountCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		else								{
 													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
 													unless ( $bFound ) {
@@ -860,6 +863,31 @@ sub mbDbShowCommand(@) {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcmd <command>");
 		return undef;
 	}
+}
+
+# countcmd <command>
+sub mbCountCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $sQuery = "SELECT count(*) as nbCommands FROM PUBLIC_COMMANDS";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute()) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		if (my $ref = $sth->fetchrow_hashref()) {
+			my $nbCommands = $ref->{'nbCommands'};
+			my $sCommandText = "command";
+			if ( $nbCommands > 1 ) {
+				$sCommandText .= "s";
+			}
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$nbCommands $sCommandText in database");
+		}
+		else {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"mbCountCommand() Empty result");
+		}
+	}
+	$sth->finish;
 }
 
 # nick <nick>
