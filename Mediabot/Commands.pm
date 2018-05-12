@@ -89,7 +89,7 @@ sub mbCommandPublic(@) {
 													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "showcommands"	{ $bFound = 1;
-													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -231,7 +231,7 @@ sub mbCommandPrivate(@) {
 													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "showcommands"	{ $bFound = 1;
-													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);

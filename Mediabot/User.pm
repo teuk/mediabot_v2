@@ -512,7 +512,7 @@ sub userNewPass(@) {
 	}
 }
 
-#addUser [-n] <username> <hostmask> [level]
+#adduser [-n] <username> <hostmask> [level]
 sub addUser(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
@@ -1835,27 +1835,41 @@ sub userTopicChannel(@) {
 
 # showcommands #channel
 sub userShowcommandsChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
-			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
-				shift @tArgs;
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"showcommands");
+			if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+					$sChannel = $tArgs[0];
+					shift @tArgs;
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
+					return undef;
+				}
 			}
-			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
-				return undef;
-			}
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Available commands on $sChannel");
+			my ($id_user,$level) = getIdUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$sMatchingUserHandle,$sChannel);
+			if ( $level >= 500) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level 500: part"); }
+			if ( $level >= 450) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level 450: join chanset"); }
+			if ( $level >= 400) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level 400: add del modinfo"); }
+			if ( $level >= 100) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level 100: op deop invite"); }
+			if ( $level >= 50) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level  50: kick topic"); }
+			if ( $level >= 25) { botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level  25: voice devoice"); }
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level   0: access chaninfo login pass newpass ident showcommands");
 		}
 		else {
-			my $sNoticeMsg = $message->prefix . " topic showcommands attempt (user $sMatchingUserHandle is not logged in)";
+			my $sNoticeMsg = $message->prefix . " showcommands attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to see available commands for your level - /msg " . $irc->nick_folded . " login username password");
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level   0: access chaninfo login pass newpass ident showcommands");
 			return undef;
 		}
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level   0: access chaninfo login pass newpass ident showcommands");
 	}
 }
 
