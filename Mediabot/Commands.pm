@@ -47,52 +47,52 @@ sub mbCommandPublic(@) {
 													addChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "chanset"			{ $bFound = 1;
-													channelSet(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelSet(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "purge"				{ $bFound = 1;
 													purgeChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "part"					{ $bFound = 1;
-													channelPart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelPart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "join"					{ $bFound = 1;
 													channelJoin(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "add"					{ $bFound = 1;
-													channelAddUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelAddUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "del"					{ $bFound = 1;
-													channelDelUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelDelUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "modinfo"			{ $bFound = 1;
-													userModinfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userModinfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "op"						{ $bFound = 1;
-													userOpChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userOpChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "deop"					{ $bFound = 1;
-													userDeopChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userDeopChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "invite"				{ $bFound = 1;
-													userInviteChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userInviteChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "voice"				{ $bFound = 1;
-													userVoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userVoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "devoice"			{ $bFound = 1;
-													userDevoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userDevoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "kick"					{ $bFound = 1;
-													userKickChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userKickChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "topic"				{ $bFound = 1;
-													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "showcommands"	{ $bFound = 1;
 													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "chaninfo"			{ $bFound = 1;
-													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -101,7 +101,7 @@ sub mbCommandPublic(@) {
 													%WHOIS_VARS = userAuthNick(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "access"				{ $bFound = 1;
-													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		case "addcmd"				{ $bFound = 1;
 													mbDbAddCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -189,52 +189,52 @@ sub mbCommandPrivate(@) {
 													addChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "chanset"			{ $bFound = 1;
-													channelSet(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelSet(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "purge"				{ $bFound = 1;
 													purgeChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "part"					{ $bFound = 1;
-													channelPart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelPart(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "join"					{ $bFound = 1;
 													channelJoin(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "add"					{ $bFound = 1;
-													channelAddUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelAddUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "del"					{ $bFound = 1;
-													channelDelUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													channelDelUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "modinfo"			{ $bFound = 1;
-													userModinfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userModinfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "op"						{ $bFound = 1;
-													userOpChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userOpChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "deop"					{ $bFound = 1;
-													userDeopChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userDeopChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "invite"				{ $bFound = 1;
-													userInviteChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userInviteChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "voice"				{ $bFound = 1;
-													userVoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userVoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "devoice"			{ $bFound = 1;
-													userDevoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userDevoiceChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "kick"					{ $bFound = 1;
-													userKickChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userKickChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "topic"				{ $bFound = 1;
-													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userTopicChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "showcommands"	{ $bFound = 1;
 													userShowcommandsChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "chaninfo"			{ $bFound = 1;
-													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -246,7 +246,7 @@ sub mbCommandPrivate(@) {
 													%WHOIS_VARS = userAuthNick(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "access"				{ $bFound = 1;
-													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													%WHOIS_VARS = userAccessChannel(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "addcmd"				{ $bFound = 1;
 													mbDbAddCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);

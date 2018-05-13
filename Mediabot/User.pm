@@ -787,120 +787,120 @@ sub addChannel(@) {
 sub channelSetSyntax(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset #channel key <key>");
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset #channel chanmode <+chanmode>");
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset #channel description <description>");
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset #channel auto_join <on|off>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] key <key>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] chanmode <+chanmode>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] description <description>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] auto_join <on|off>");
 }
 
 sub channelSet(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,450))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							switch($tArgs[0]) {
-								case "key"					{
-																			my $sQuery = "UPDATE CHANNEL SET `key`=? WHERE id_channel=?";
-																			my $sth = $dbh->prepare($sQuery);
-																			unless ($sth->execute($tArgs[1],$id_channel)) {
-																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																				$sth->finish;
-																				return undef;
-																			}
-																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel key " . $tArgs[1]);
-																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+			}
+			unless (defined($sChannel)) {
+				channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,450))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						switch($tArgs[0]) {
+							case "key"					{
+																		my $sQuery = "UPDATE CHANNEL SET `key`=? WHERE id_channel=?";
+																		my $sth = $dbh->prepare($sQuery);
+																		unless ($sth->execute($tArgs[1],$id_channel)) {
+																			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 																			$sth->finish;
-																			return $id_channel;
+																			return undef;
 																		}
-								case "chanmode"			{
-																			my $sQuery = "UPDATE CHANNEL SET chanmode=? WHERE id_channel=?";
-																			my $sth = $dbh->prepare($sQuery);
-																			unless ($sth->execute($tArgs[1],$id_channel)) {
-																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																				$sth->finish;
-																				return undef;
-																			}
-																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel chanmode " . $tArgs[1]);
-																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel key " . $tArgs[1]);
+																		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																		$sth->finish;
+																		return $id_channel;
+																	}
+							case "chanmode"			{
+																		my $sQuery = "UPDATE CHANNEL SET chanmode=? WHERE id_channel=?";
+																		my $sth = $dbh->prepare($sQuery);
+																		unless ($sth->execute($tArgs[1],$id_channel)) {
+																			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 																			$sth->finish;
-																			return $id_channel;
+																			return undef;
 																		}
-								case "auto_join"		{
-																			my $bAutoJoin;
-																			if ( $tArgs[1] =~ /on/i ) {
-																				$bAutoJoin = 1;
-																			}
-																			elsif ( $tArgs[1] =~ /off/i ) {
-																				$bAutoJoin = 0;
-																			}
-																			else {
-																				channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
-																				return undef;
-																			}
-																			my $sQuery = "UPDATE CHANNEL SET auto_join=? WHERE id_channel=?";
-																			my $sth = $dbh->prepare($sQuery);
-																			unless ($sth->execute($bAutoJoin,$id_channel)) {
-																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																				$sth->finish;
-																				return undef;
-																			}
-																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel auto_join " . $tArgs[1]);
-																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
-																			$sth->finish;
-																			return $id_channel;
+																		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel chanmode " . $tArgs[1]);
+																		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																		$sth->finish;
+																		return $id_channel;
+																	}
+							case "auto_join"		{
+																		my $bAutoJoin;
+																		if ( $tArgs[1] =~ /on/i ) {
+																			$bAutoJoin = 1;
 																		}
-								case "description"	{
-																			shift @tArgs;
-																			unless ( $tArgs[0] =~ /console/i ) {
-																				my $sQuery = "UPDATE CHANNEL SET description=? WHERE id_channel=?";
-																				my $sth = $dbh->prepare($sQuery);
-																				unless ($sth->execute(join(" ",@tArgs),$id_channel)) {
-																					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																					$sth->finish;
-																					return undef;
-																				}
-																				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel description " . join(" ",@tArgs));
-																				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,"description",@tArgs));
-																				$sth->finish;
-																				return $id_channel;
-																			}
-																			else {
-																				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You cannot set $sChannel description to " . $tArgs[0]);
-																			}
+																		elsif ( $tArgs[1] =~ /off/i ) {
+																			$bAutoJoin = 0;
 																		}
-								else								{
+																		else {
 																			channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 																			return undef;
 																		}
-							}
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
+																		my $sQuery = "UPDATE CHANNEL SET auto_join=? WHERE id_channel=?";
+																		my $sth = $dbh->prepare($sQuery);
+																		unless ($sth->execute($bAutoJoin,$id_channel)) {
+																			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																			$sth->finish;
+																			return undef;
+																		}
+																		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel auto_join " . $tArgs[1]);
+																		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,@tArgs));
+																		$sth->finish;
+																		return $id_channel;
+																	}
+							case "description"	{
+																		shift @tArgs;
+																		unless ( $tArgs[0] =~ /console/i ) {
+																			my $sQuery = "UPDATE CHANNEL SET description=? WHERE id_channel=?";
+																			my $sth = $dbh->prepare($sQuery);
+																			unless ($sth->execute(join(" ",@tArgs),$id_channel)) {
+																				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"channelSet() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				$sth->finish;
+																				return undef;
+																			}
+																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set $sChannel description " . join(" ",@tArgs));
+																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,"description",@tArgs));
+																			$sth->finish;
+																			return $id_channel;
+																		}
+																		else {
+																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You cannot set $sChannel description to " . $tArgs[0]);
+																		}
+																	}
+							else								{
+																		channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+																		return undef;
+																	}
 						}
 					}
 					else {
-						channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " chanset command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 					return undef;
 				}
 			}
 			else {
-				channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+				my $sNoticeMsg = $message->prefix . " chanset command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -919,126 +919,126 @@ sub channelSet(@) {
 sub userModinfoSyntax(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo #channel automode <user> <voice|op|none>");
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo #channel greet <user> <greet>");
-	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo #channel level <user> <level>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo [#channel] automode <user> <voice|op|none>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo [#channel] greet <user> <greet>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modinfo [#channel] level <user> <level>");
 }
 
 sub userModinfo(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "") && defined($tArgs[2]) && ($tArgs[2] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							my ($id_user,$level) = getIdUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$tArgs[1],$sChannel);
-							if (defined($id_user)) {
-								my (undef,$iMatchingUserLevelChannel) = getIdUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$sMatchingUserHandle,$sChannel);
-								if (($iMatchingUserLevelChannel > $level) || (checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator"))) {
-									switch($tArgs[0]) {
-										case "automode"			{
-																					my $sAutomode = $tArgs[2];
-																					if ( ($sAutomode =~ /op/i ) || ($sAutomode =~ /voice/i) || ($sAutomode =~ /none/i)) {
-																						$sAutomode = uc($sAutomode);
-																						my $sQuery = "UPDATE USER_CHANNEL SET automode=? WHERE id_user=? AND id_channel=?";
-																						my $sth = $dbh->prepare($sQuery);
-																						unless ($sth->execute($sAutomode,$id_user,$id_channel)) {
-																							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																							$sth->finish;
-																							return undef;
-																						}
-																						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set automode $sAutomode on $sChannel for " . $tArgs[1]);
-																						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
-																						$sth->finish;
-																						return $id_channel;
-																													}
-																						
-																					else {
-																						userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
-																						return undef;
-																					}
-																				}
-										case "greet"				{
-																					my $sUser = $tArgs[1];
-																					splice @tArgs,0,2;
-																					my $sGreet = join(" ",@tArgs);
-																					my $sQuery = "UPDATE USER_CHANNEL SET greet=? WHERE id_user=? AND id_channel=?";
+			}
+			unless (defined($sChannel)) {
+				userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "") && defined($tArgs[2]) && ($tArgs[2] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						my ($id_user,$level) = getIdUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$tArgs[1],$sChannel);
+						if (defined($id_user)) {
+							my (undef,$iMatchingUserLevelChannel) = getIdUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$sMatchingUserHandle,$sChannel);
+							if (($iMatchingUserLevelChannel > $level) || (checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator"))) {
+								switch($tArgs[0]) {
+									case "automode"			{
+																				my $sAutomode = $tArgs[2];
+																				if ( ($sAutomode =~ /op/i ) || ($sAutomode =~ /voice/i) || ($sAutomode =~ /none/i)) {
+																					$sAutomode = uc($sAutomode);
+																					my $sQuery = "UPDATE USER_CHANNEL SET automode=? WHERE id_user=? AND id_channel=?";
 																					my $sth = $dbh->prepare($sQuery);
-																					unless ($sth->execute($sGreet,$id_user,$id_channel)) {
+																					unless ($sth->execute($sAutomode,$id_user,$id_channel)) {
 																						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 																						$sth->finish;
 																						return undef;
 																					}
-																					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set greet ($sGreet) on $sChannel for $sUser");
-																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",("greet $sUser",@tArgs));
+																					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set automode $sAutomode on $sChannel for " . $tArgs[1]);
+																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
 																					$sth->finish;
 																					return $id_channel;
-																				}
-										case "level"				{
-																					my $sUser = $tArgs[1];
-																					if ( $tArgs[2] =~ /[0-9]+/ ) {
-																						if ( $tArgs [2] <= 500 ) {
-																							my $sQuery = "UPDATE USER_CHANNEL SET level=? WHERE id_user=? AND id_channel=?";
-																							my $sth = $dbh->prepare($sQuery);
-																							unless ($sth->execute($tArgs[2]	,$id_user,$id_channel)) {
-																								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-																								$sth->finish;
-																								return undef;
-																							}
-																							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set level " . $tArgs[2] . " on $sChannel for $sUser");
-																							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
-																							$sth->finish;
-																							return $id_channel;
-																						}
-																						else {
-																							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Cannot set user access higher than 500.");
-																						}
-																					}
-																					else {
-																						userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
-																						return undef;
-																					}
-																				}
-										else								{
+																												}
+																					
+																				else {
 																					userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 																					return undef;
 																				}
-									}
-								}
-								else {
-									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Cannot modify a user with equal or higher access than your own.");
+																			}
+									case "greet"				{
+																				my $sUser = $tArgs[1];
+																				splice @tArgs,0,2;
+																				my $sGreet = join(" ",@tArgs);
+																				my $sQuery = "UPDATE USER_CHANNEL SET greet=? WHERE id_user=? AND id_channel=?";
+																				my $sth = $dbh->prepare($sQuery);
+																				unless ($sth->execute($sGreet,$id_user,$id_channel)) {
+																					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																					$sth->finish;
+																					return undef;
+																				}
+																				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set greet ($sGreet) on $sChannel for $sUser");
+																				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",("greet $sUser",@tArgs));
+																				$sth->finish;
+																				return $id_channel;
+																			}
+									case "level"				{
+																				my $sUser = $tArgs[1];
+																				if ( $tArgs[2] =~ /[0-9]+/ ) {
+																					if ( $tArgs [2] <= 500 ) {
+																						my $sQuery = "UPDATE USER_CHANNEL SET level=? WHERE id_user=? AND id_channel=?";
+																						my $sth = $dbh->prepare($sQuery);
+																						unless ($sth->execute($tArgs[2]	,$id_user,$id_channel)) {
+																							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"userModinfo() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																							$sth->finish;
+																							return undef;
+																						}
+																						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Set level " . $tArgs[2] . " on $sChannel for $sUser");
+																						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"modinfo",@tArgs);
+																						$sth->finish;
+																						return $id_channel;
+																					}
+																					else {
+																						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Cannot set user access higher than 500.");
+																					}
+																				}
+																				else {
+																					userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+																					return undef;
+																				}
+																			}
+									else								{
+																				userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+																				return undef;
+																			}
 								}
 							}
 							else {
-								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User " . $tArgs[1] . " does not exist on $sChannel");
-								return undef;
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Cannot modify a user with equal or higher access than your own.");
 							}
 						}
 						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User " . $tArgs[1] . " does not exist on $sChannel");
 							return undef;
 						}
 					}
 					else {
-						userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " modinfo command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 					return undef;
 				}
 			}
 			else {
-				userModinfoSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+				my $sNoticeMsg = $message->prefix . " modinfo command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1086,35 +1086,37 @@ sub userOnJoin(@) {
 
 # part #channel
 sub channelPart(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
-			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
-				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,500))) {
-					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-					if (defined($id_channel)) {
-						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a part $sChannel command");
-						partChannel($irc,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,$sChannel,"At the request of $sMatchingUserHandle");
-						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"part","At the request of $sMatchingUserHandle");
-					}
-					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-						return undef;
-					}
+			if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+					$sChannel = $tArgs[0];
+					shift @tArgs;
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " part command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : part <#channel>");
+					return undef;
+				}
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,500))) {
+				my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+				if (defined($id_channel)) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a part $sChannel command");
+					partChannel($irc,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,$sChannel,"At the request of $sMatchingUserHandle");
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"part","At the request of $sMatchingUserHandle");
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : part <#channel>");
+				my $sNoticeMsg = $message->prefix . " part command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1189,64 +1191,64 @@ sub channelJoin(@) {
 
 # add <#channel> <handle> <level>
 sub channelAddUser(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] =~ /[0-9]+/)) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a add user $sChannel command");
-							my $sUserHandle = $tArgs[0];
-							my $iLevel = $tArgs[1];
-							my $id_user = getIdUser(\%MAIN_CONF,$LOG,$dbh,$tArgs[0]);
-							if (defined($id_user)) {
-								my $iCheckUserLevel = getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$id_user);
-								if ( $iCheckUserLevel == 0 ) {
-									if ( $iLevel < getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId) || checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-										my $sQuery = "INSERT INTO USER_CHANNEL (id_user,id_channel,level) VALUES (?,?,?)";
-										my $sth = $dbh->prepare($sQuery);
-										unless ($sth->execute($id_user,$id_channel,$iLevel)) {
-											log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-										}
-										else {
-											logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"add",@tArgs);
-										}
-										$sth->finish;
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] =~ /[0-9]+/)) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a add user $sChannel command");
+						my $sUserHandle = $tArgs[0];
+						my $iLevel = $tArgs[1];
+						my $id_user = getIdUser(\%MAIN_CONF,$LOG,$dbh,$tArgs[0]);
+						if (defined($id_user)) {
+							my $iCheckUserLevel = getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$id_user);
+							if ( $iCheckUserLevel == 0 ) {
+								if ( $iLevel < getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId) || checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+									my $sQuery = "INSERT INTO USER_CHANNEL (id_user,id_channel,level) VALUES (?,?,?)";
+									my $sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($id_user,$id_channel,$iLevel)) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 									}
 									else {
-										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't add a user with a level equal or greater than yours");
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"add",@tArgs);
 									}
+									$sth->finish;
 								}
 								else {
-									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle on $sChannel already added at level $iCheckUserLevel");
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't add a user with a level equal or greater than yours");
 								}
 							}
 							else {
-								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not exist");
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle on $sChannel already added at level $iCheckUserLevel");
 							}
 						}
 						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not exist");
 						}
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " add user command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
+				my $sNoticeMsg = $message->prefix . " add user command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 			}
 		}
 		else {
@@ -1259,63 +1261,63 @@ sub channelAddUser(@) {
 
 # del <#channel> <handle>
 sub channelDelUser(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a del user $sChannel command");
-							my $sUserHandle = $tArgs[0];
-							my $id_user = getIdUser(\%MAIN_CONF,$LOG,$dbh,$tArgs[0]);
-							if (defined($id_user)) {
-								my $iCheckUserLevel = getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$id_user);
-								if ( $iCheckUserLevel != 0 ) {
-									if ( $iCheckUserLevel < getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId) || checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-										my $sQuery = "DELETE FROM USER_CHANNEL WHERE id_user=? AND id_channel=?";
-										my $sth = $dbh->prepare($sQuery);
-										unless ($sth->execute($id_user,$id_channel)) {
-											log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-										}
-										else {
-											logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"del",@tArgs);
-										}
-										$sth->finish;
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a del user $sChannel command");
+						my $sUserHandle = $tArgs[0];
+						my $id_user = getIdUser(\%MAIN_CONF,$LOG,$dbh,$tArgs[0]);
+						if (defined($id_user)) {
+							my $iCheckUserLevel = getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$id_user);
+							if ( $iCheckUserLevel != 0 ) {
+								if ( $iCheckUserLevel < getUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId) || checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+									my $sQuery = "DELETE FROM USER_CHANNEL WHERE id_user=? AND id_channel=?";
+									my $sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($id_user,$id_channel)) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 									}
 									else {
-										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't del a user with a level equal or greater than yours");
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"del",@tArgs);
 									}
+									$sth->finish;
 								}
 								else {
-									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not appear to have access on $sChannel");
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You can't del a user with a level equal or greater than yours");
 								}
 							}
 							else {
-								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not exist");
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not appear to have access on $sChannel");
 							}
 						}
 						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User $sUserHandle does not exist");
 						}
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " del user command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
+				my $sNoticeMsg = $message->prefix . " del user command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 			}
 		}
 		else {
@@ -1482,42 +1484,42 @@ sub purgeChannel(@) {
 
 # op #channel <nick>
 sub userOpChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a op $sChannel command");
-							$irc->send_message("MODE",undef,($sChannel,"+o",$tArgs[0]));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"op",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a op $sChannel command");
+						$irc->send_message("MODE",undef,($sChannel,"+o",$tArgs[0]));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"op",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " op command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
+				my $sNoticeMsg = $message->prefix . " op command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1530,44 +1532,44 @@ sub userOpChannel(@) {
 	}
 }
 
-# op #channel <nick>
+# deop #channel <nick>
 sub userDeopChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a deop $sChannel command");
-							$irc->send_message("MODE",undef,($sChannel,"-o",$tArgs[0]));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"deop",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a deop $sChannel command");
+						$irc->send_message("MODE",undef,($sChannel,"-o",$tArgs[0]));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"deop",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " deop command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
+				my $sNoticeMsg = $message->prefix . " deop command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1582,42 +1584,42 @@ sub userDeopChannel(@) {
 
 # invite #channel <nick>
 sub userInviteChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued an invite $sChannel command");
-							$irc->send_message("INVITE",undef,($tArgs[0],$sChannel));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"invite",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued an invite $sChannel command");
+						$irc->send_message("INVITE",undef,($tArgs[0],$sChannel));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"invite",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " invite command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
+				my $sNoticeMsg = $message->prefix . " invite command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1632,42 +1634,42 @@ sub userInviteChannel(@) {
 
 # voice #channel <nick>
 sub userVoiceChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a voice $sChannel command");
-							$irc->send_message("MODE",undef,($sChannel,"+v",$tArgs[0]));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"voice",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a voice $sChannel command");
+						$irc->send_message("MODE",undef,($sChannel,"+v",$tArgs[0]));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"voice",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " voice command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
+				my $sNoticeMsg = $message->prefix . " voice command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1682,42 +1684,42 @@ sub userVoiceChannel(@) {
 
 # voice #channel <nick>
 sub userDevoiceChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a devoice $sChannel command");
-							$irc->send_message("MODE",undef,($sChannel,"-v",$tArgs[0]));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"devoice",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a devoice $sChannel command");
+						$irc->send_message("MODE",undef,($sChannel,"-v",$tArgs[0]));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"devoice",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " devoice command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
+				my $sNoticeMsg = $message->prefix . " devoice command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1732,45 +1734,45 @@ sub userDevoiceChannel(@) {
 
 # kick #channel <nick>
 sub userKickChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a kick $sChannel command");
-							my $sKickNick = $tArgs[0];
-							shift @tArgs;
-							my $sKickReason = join(" ",@tArgs);
-							$irc->send_message("KICK",undef,($sChannel,$sKickNick,"($sMatchingUserHandle) $sKickReason"));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"kick",($sKickNick,@tArgs));
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a kick $sChannel command");
+						my $sKickNick = $tArgs[0];
+						shift @tArgs;
+						my $sKickReason = join(" ",@tArgs);
+						$irc->send_message("KICK",undef,($sChannel,$sKickNick,"($sMatchingUserHandle) $sKickReason"));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"kick",($sKickNick,@tArgs));
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " kick command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
+				my $sNoticeMsg = $message->prefix . " kick command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1785,42 +1787,42 @@ sub userKickChannel(@) {
 
 # topic #channel <topic>
 sub userTopicChannel(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-				my $sChannel = $tArgs[0];
+				$sChannel = $tArgs[0];
 				shift @tArgs;
-				if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
-					if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
-						if (defined($id_channel)) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a topic $sChannel command");
-							$irc->send_message("TOPIC",undef,($sChannel,join(" ",@tArgs)));
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"topic",@tArgs);
-							return $id_channel;
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
-							return undef;
-						}
+			}
+			unless (defined($sChannel)) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
+				return undef;
+			}
+			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued a topic $sChannel command");
+						$irc->send_message("TOPIC",undef,($sChannel,join(" ",@tArgs)));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"topic",@tArgs);
+						return $id_channel;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
 						return undef;
 					}
 				}
 				else {
-					my $sNoticeMsg = $message->prefix . " topic command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
-					noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
 					return undef;
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
+				my $sNoticeMsg = $message->prefix . " topic command attempt for user " . $sMatchingUserHandle . " [" . $iMatchingUserLevelDesc ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
 				return undef;
 			}
 		}
@@ -1875,36 +1877,36 @@ sub userShowcommandsChannel(@) {
 
 # chaninfo #channel
 sub userChannelInfo(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-		my $sChannel = $tArgs[0];
+		$sChannel = $tArgs[0];
 		shift @tArgs;
-		my $sQuery = "SELECT nickname,last_login FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND level=500";
-		my $sth = $dbh->prepare($sQuery);
-		unless ($sth->execute($sChannel)) {
-			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-		}
-		else {
-			if (my $ref = $sth->fetchrow_hashref()) {
-				my $sUsername = $ref->{'nickname'};
-				my $sLastLogin = $ref->{'last_login'};
-				unless(defined($sLastLogin) && ($sLastLogin ne "")) {
-					$sLastLogin = "Never";
-				}
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sChannel is registered by $sUsername - last login: $sLastLogin");
-			}
-			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"The channel $sChannel doesn't appear to be registered");
-			}
-			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chaninfo",@tArgs);
-		}
-		$sth->finish;
+	}
+	unless (defined($sChannel)) {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : chaninfo #channel");
+		return undef;
+	}
+	my $sQuery = "SELECT nickname,last_login FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND level=500";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($sChannel)) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 	}
 	else {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
-		return undef;
-	}	
+		if (my $ref = $sth->fetchrow_hashref()) {
+			my $sUsername = $ref->{'nickname'};
+			my $sLastLogin = $ref->{'last_login'};
+			unless(defined($sLastLogin) && ($sLastLogin ne "")) {
+				$sLastLogin = "Never";
+			}
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sChannel is registered by $sUsername - last login: $sLastLogin");
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"The channel $sChannel doesn't appear to be registered");
+		}
+		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chaninfo",@tArgs);
+	}
+	$sth->finish;
 }
 
 # cstat 
@@ -2156,66 +2158,66 @@ sub getUserChannelLevelByName(@) {
 # access #channel <nickhandle>
 # access #channel =<nick>
 sub userAccessChannel(@) {
-	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
-		my $sChannel = $tArgs[0];
+		$sChannel = $tArgs[0];
 		shift @tArgs;
-		if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-			if (substr($tArgs[0], 0, 1) eq '=') {
-				$tArgs[0] = substr($tArgs[0],1);
-				$WHOIS_VARS{'nick'} = $tArgs[0];
-				$WHOIS_VARS{'sub'} = "userAccessChannel";
-				$WHOIS_VARS{'caller'} = $sNick;
-				$WHOIS_VARS{'channel'} = $sChannel;
-				$WHOIS_VARS{'message'} = $message;
-				$irc->send_message("WHOIS", undef, $tArgs[0]);
-				return %WHOIS_VARS;
-			}
-			else {
-				my $iChannelUserLevelAccess = getUserChannelLevelByName(\%MAIN_CONF,$LOG,$dbh,$sChannel,$tArgs[0]);
-				if ( $iChannelUserLevelAccess == 0 ) {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No Match!");
-					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
-				}
-				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"USER: " . $tArgs[0] . " ACCESS: $iChannelUserLevelAccess");
-					my $sQuery = "SELECT automode,greet FROM USER,USER_CHANNEL,CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel AND USER.id_user=USER_CHANNEL.id_user AND nickname like ? AND CHANNEL.name=?";
-					my $sth = $dbh->prepare($sQuery);
-					unless ($sth->execute($tArgs[0],$sChannel)) {
-						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-					}
-					else {
-						my $sAuthUserStr;
-						if (my $ref = $sth->fetchrow_hashref()) {
-							my $sGreetMsg = $ref->{'greet'};
-							my $sAutomode = $ref->{'automode'};
-							unless (defined($sGreetMsg)) {
-								$sGreetMsg = "None";
-							}
-							unless (defined($sAutomode)) {
-								$sAutomode = "None";
-							}							
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"CHANNEL: $sChannel -- Automode: $sAutomode");
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"GREET MESSAGE: $sGreetMsg");
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
-						}
-					}
-					$sth->finish;
-				}
-				return ();
-			}
+	}
+	unless (defined($sChannel)) {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+		return ();
+	}
+	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+		if (substr($tArgs[0], 0, 1) eq '=') {
+			$tArgs[0] = substr($tArgs[0],1);
+			$WHOIS_VARS{'nick'} = $tArgs[0];
+			$WHOIS_VARS{'sub'} = "userAccessChannel";
+			$WHOIS_VARS{'caller'} = $sNick;
+			$WHOIS_VARS{'channel'} = $sChannel;
+			$WHOIS_VARS{'message'} = $message;
+			$irc->send_message("WHOIS", undef, $tArgs[0]);
+			return %WHOIS_VARS;
 		}
 		else {
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+			my $iChannelUserLevelAccess = getUserChannelLevelByName(\%MAIN_CONF,$LOG,$dbh,$sChannel,$tArgs[0]);
+			if ( $iChannelUserLevelAccess == 0 ) {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No Match!");
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"USER: " . $tArgs[0] . " ACCESS: $iChannelUserLevelAccess");
+				my $sQuery = "SELECT automode,greet FROM USER,USER_CHANNEL,CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel AND USER.id_user=USER_CHANNEL.id_user AND nickname like ? AND CHANNEL.name=?";
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute($tArgs[0],$sChannel)) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				}
+				else {
+					my $sAuthUserStr;
+					if (my $ref = $sth->fetchrow_hashref()) {
+						my $sGreetMsg = $ref->{'greet'};
+						my $sAutomode = $ref->{'automode'};
+						unless (defined($sGreetMsg)) {
+							$sGreetMsg = "None";
+						}
+						unless (defined($sAutomode)) {
+							$sAutomode = "None";
+						}							
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"CHANNEL: $sChannel -- Automode: $sAutomode");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"GREET MESSAGE: $sGreetMsg");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"access",($sChannel,@tArgs));
+					}
+				}
+				$sth->finish;
+			}
 			return ();
 		}
 	}
 	else {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
 		return ();
-	}	
+	}
 }
 
 # chanstatlines #channel
