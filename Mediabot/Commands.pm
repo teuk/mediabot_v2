@@ -14,7 +14,7 @@ use Mediabot::User;
 use Mediabot::Plugins;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion);
+@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -123,6 +123,9 @@ sub mbCommandPublic(@) {
 													}
 		case "countcmd"			{ $bFound = 1;
 														mbCountCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
+		case "searchcmd"		{ $bFound = 1;
+														mbDbSearchCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		else								{
 													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
@@ -888,6 +891,41 @@ sub mbCountCommand(@) {
 		}
 	}
 	$sth->finish;
+}
+
+# searchcmd <keyword>
+sub mbDbSearchCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+		my $sCommand = $tArgs[0];
+		unless ($sCommand =~ /%/) {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"sCommand : $sCommand");
+			my $sQuery = "SELECT * FROM PUBLIC_COMMANDS WHERE action LIKE '%" . $sCommand . "%' ORDER BY command LIMIT 20";
+			my $sth = $dbh->prepare($sQuery);
+			unless ($sth->execute()) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+			}
+			else {
+				my $sResponse;
+				while (my $ref = $sth->fetchrow_hashref()) {
+					my $command = $ref->{'command'};
+					$sResponse .= " $command";
+				}
+				unless(defined($sResponse) && ($sResponse ne "")) {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"keyword $sCommand not found in commands");
+				}
+				else {
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Commands containing $sCommand : $sResponse");
+				}
+			}
+			$sth->finish;
+		}
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : searchcmd <keyword>");
+		return undef;
+	}
 }
 
 # nick <nick>
