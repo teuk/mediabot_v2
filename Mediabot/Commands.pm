@@ -14,7 +14,7 @@ use Mediabot::User;
 use Mediabot::Plugins;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion);
+@EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion mbLastCommand);
 
 sub mbCommandPublic(@) {
 	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
@@ -126,6 +126,9 @@ sub mbCommandPublic(@) {
 												}
 		case "searchcmd"		{ $bFound = 1;
 														mbDbSearchCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
+		case "lastcmd"			{ $bFound = 1;
+														mbLastCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		else								{
 													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
@@ -888,6 +891,32 @@ sub mbCountCommand(@) {
 		}
 		else {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"mbCountCommand() Empty result");
+		}
+	}
+	$sth->finish;
+}
+
+# lastcmd
+sub mbLastCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $sQuery = "SELECT command FROM PUBLIC_COMMANDS ORDER BY creation_date DESC LIMIT 10";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute()) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		my $sCommandText;
+		while (my $ref = $sth->fetchrow_hashref()) {
+			my $command = $ref->{'command'};
+			$sCommandText .= " $command";
+			
+		}
+		if (defined($sCommandText) && ($sCommandText ne "")) {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Last commands in database :$sCommandText");
+		}
+		else {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command found in databse");
 		}
 	}
 	$sth->finish;
