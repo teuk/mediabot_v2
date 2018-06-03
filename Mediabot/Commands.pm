@@ -17,9 +17,10 @@ use Mediabot::Plugins;
 @EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion mbLastCommand);
 
 sub mbCommandPublic(@) {
-	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
+	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
+	my %hChannelsNicks = %$NVars;
 	my $bFound = 0;
 	switch($sCommand) {
 		case "quit"					{ $bFound = 1;
@@ -130,10 +131,16 @@ sub mbCommandPublic(@) {
 		case "lastcmd"			{ $bFound = 1;
 														mbLastCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "nicklist"			{ $bFound = 1;
+														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
+		case "rnick"				{ $bFound = 1;
+														randomChannelNick(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		else								{
 													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
 													unless ( $bFound ) {
-														$bFound = mbDbCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
+														$bFound = mbDbCommand(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
 													}
 												}
 	}
@@ -147,9 +154,10 @@ sub mbCommandPublic(@) {
 }
 
 sub mbCommandPrivate(@) {
-	my ($WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sNick,$sCommand,@tArgs)	= @_;
+	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
+	my %hChannelsNicks = %$NVars;
 	my $bFound = 0;
 	switch($sCommand) {
 		case "quit"					{ $bFound = 1;
@@ -265,6 +273,12 @@ sub mbCommandPrivate(@) {
 												}
 		case "showcmd"			{ $bFound = 1;
 													mbDbShowCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "nicklist"			{ $bFound = 1;
+														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
+												}
+		case "rnick"				{ $bFound = 1;
+														randomChannelNick(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		else								{
 												
@@ -458,7 +472,8 @@ sub mbRegister(@) {
 }
 
 sub mbDbCommand(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs) = @_;
+	my ($NVars,$Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs) = @_;
+	my %hChannelsNicks = %$NVars;
 	my %MAIN_CONF = %$Config;
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"Check SQL command : $sCommand");
 	my $sQuery = "SELECT * FROM PUBLIC_COMMANDS WHERE command like ?";
@@ -480,6 +495,14 @@ sub mbDbCommand(@) {
 					}
 					else {
 						$actionDo =~ s/%n/$sNick/g;
+					}
+					if ( $actionDo =~ /%r/ ) {
+						my $sRandomNick = getRandomNick(\%hChannelsNicks,$sChannel);
+						$actionDo =~ s/%r/$sRandomNick/g;
+					}
+					if ( $actionDo =~ /%R/ ) {
+						my $sRandomNick = getRandomNick(\%hChannelsNicks,$sChannel);
+						$actionDo =~ s/%R/$sRandomNick/g;
 					}
 					if ( $actionDo =~ /%s/ ) {
 						$actionDo =~ s/%s/$sCommand/g;
@@ -536,6 +559,14 @@ sub mbDbCommand(@) {
 					}
 					else {
 						$actionDo =~ s/%n/$sNick/g;
+					}
+					if ( $actionDo =~ /%r/ ) {
+						my $sRandomNick = getRandomNick(\%hChannelsNicks,$sChannel);
+						$actionDo =~ s/%r/$sRandomNick/g;
+					}
+					if ( $actionDo =~ /%R/ ) {
+						my $sRandomNick = getRandomNick(\%hChannelsNicks,$sChannel);
+						$actionDo =~ s/%R/$sRandomNick/g;
 					}
 					$actionDo =~ s/%N/$sNick/g;
 					if ( $actionDo =~ /%s/ ) {

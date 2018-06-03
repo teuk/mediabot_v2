@@ -9,7 +9,7 @@ use Mediabot::Common;
 use Mediabot::Database;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(botAction botNotice botPrivmsg);
+@EXPORT  = qw(botAction botNotice botPrivmsg getRandomNick);
 
 sub botPrivmsg(@) {
 	my ($Config,$LOG,$dbh,$irc,$sTo,$sMsg) = @_;
@@ -49,4 +49,12 @@ sub botNotice(@) {
 	if (substr($sTo, 0, 1) eq '#') {
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,undef,"notice",$irc->nick_folded,$sTo,$sMsg);
 	}
+}
+
+sub getRandomNick(@) {
+	my ($NVars,$sChannel) = @_;
+	my %hChannelsNicks = %$NVars;
+	my @tChannelNicks = @{$hChannelsNicks{$sChannel}};
+	my $sRandomNick = $tChannelNicks[rand @tChannelNicks];
+	return $sRandomNick;
 }

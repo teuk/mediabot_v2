@@ -81,14 +81,13 @@ my $LEVEL_MASTER = 1;
 my $LEVEL_ADMINISTRATOR = 2;
 my $LEVEL_USER = 3;
 
-my $DB_AUTORECONNECT_DELAY = 120;
-
 # +---------------------------------------------------------------------------+
 # !          GLOBAL VARS                                                      !
 # +---------------------------------------------------------------------------+
 my $iConnectionTimestamp;
 my %WHOIS_VARS;
-
+my %hChannelsNicks;
+my %hChannelsNicksEnd;
 
 # +---------------------------------------------------------------------------+
 # !          SUBS DECLARATION                                                 !
@@ -120,7 +119,8 @@ sub on_message_PART(@);
 sub on_message_PRIVMSG(@);
 sub on_message_TOPIC(@);
 sub on_message_LIST(@);
-sub on_message_NAMES(@);
+sub on_message_RPL_NAMEREPLY(@);
+sub on_message_RPL_ENDOFNAMES(@);
 sub on_message_WHO(@);
 sub on_message_WHOIS(@);
 sub on_message_WHOWAS(@);
@@ -131,6 +131,7 @@ sub on_message_002(@);
 sub on_message_003(@);
 sub on_message_RPL_WHOISUSER(@);
 
+sub channelNicksRemove(@);
 
 # +---------------------------------------------------------------------------+
 # !          MAIN                                                             !
@@ -256,7 +257,8 @@ my $irc = Net::Async::IRC->new(
   on_message_PRIVMSG => \&on_message_PRIVMSG,
   on_message_TOPIC => \&on_message_TOPIC,
   on_message_LIST => \&on_message_LIST,
-  on_message_NAMES => \&on_message_NAMES,
+  on_message_RPL_NAMEREPLY => \&on_message_RPL_NAMEREPLY,
+  on_message_RPL_ENDOFNAMES => \&on_message_RPL_ENDOFNAMES,
   on_message_WHO => \&on_message_WHO,
   on_message_WHOIS => \&on_message_WHOIS,
   on_message_WHOWAS => \&on_message_WHOWAS,
@@ -394,6 +396,7 @@ sub on_message_KICK(@) {
 	}
 	else {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"$target_name: $kicked_nick was kicked by $kicker_nick ($text)");
+		channelNicksRemove($target_name,$kicked_nick);
 	}
 	logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"kick",$kicker_nick,$target_name,"$kicked_nick ($text)");
 }
@@ -428,6 +431,17 @@ sub on_message_NICK(@) {
 	}
 	else {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"* $old_nick is now known as $new_nick");
+		# Change nick in %hChannelsNicks
+		for my $sChannel (keys %hChannelsNicks) {
+		  my $index;
+			for ($index=0;$index<=$#{$hChannelsNicks{$sChannel}};$index++ ) {
+				my $currentNick = ${$hChannelsNicks{$sChannel}}[$index];
+				if ( $currentNick eq $old_nick) {
+					${$hChannelsNicks{$sChannel}}[$index] = $new_nick;
+					last;
+				}
+			}
+		}
 	}
 	logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"nick",$old_nick,undef,$new_nick);
 }
@@ -480,6 +494,9 @@ sub on_message_QUIT(@) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2," * Quits: $sNick ($sIdent\@$sHost) ()");
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"quit",$sNick,undef,"");
 	}
+	for my $sChannel (keys %hChannelsNicks) {
+	  channelNicksRemove($sChannel,$sNick);
+	}
 }
 
 sub on_message_PART(@){
@@ -496,6 +513,7 @@ sub on_message_PART(@){
 	else {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"<$target_name> * Parts: $sNick ($sIdent\@$sHost)");
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"part",$sNick,$target_name,"");
+		channelNicksRemove($target_name,$sNick);
 	}
 	
 }
@@ -511,7 +529,7 @@ sub on_message_PRIVMSG(@) {
         $sCommand = substr($sCommand,1);
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
-        	%WHOIS_VARS = mbCommandPublic(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
+        	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
         }
 		}
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
@@ -545,7 +563,7 @@ sub on_message_PRIVMSG(@) {
 										    		}
 													}
 	    	else {
-	    		%WHOIS_VARS = mbCommandPrivate(\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
+	    		%WHOIS_VARS = mbCommandPrivate(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
 	    	}
 	    }
     }
@@ -567,10 +585,29 @@ sub on_message_LIST(@) {
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"on_message_LIST() $target_name");
 }
 
-sub on_message_NAMES(@) {
+sub on_message_RPL_NAMEREPLY(@) {
+	my ($self,$message,$hints) = @_;
+	my @args = $message->args;
+	$args[3] =~ s/@//g;
+	$args[3] =~ s/\+//g;
+	my @tNicklist = split(" ",$args[3]);
+	my ($target_name) = @{$hints}{qw<target_name>};
+	unless (defined($hChannelsNicksEnd{$target_name})) {
+		$hChannelsNicksEnd{$target_name} = 0;
+	}
+	if ( $hChannelsNicksEnd{$target_name} ) {
+		$hChannelsNicksEnd{$target_name} = 0;
+		@{$hChannelsNicks{$target_name}} = ();
+	}
+	push(@{$hChannelsNicks{$target_name}}, @tNicklist);
+}
+
+sub on_message_RPL_ENDOFNAMES(@) {
 	my ($self,$message,$hints) = @_;
 	my ($target_name) = @{$hints}{qw<target_name>};
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"on_message_NAMES() $target_name");
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"on_message_RPL_ENDOFNAMES() $target_name");
+	$hChannelsNicksEnd{$target_name} = 1;
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"on_message_RPL_ENDOFNAMES() " . Dumper(@{$hChannelsNicks{$target_name}}));
 }
 
 sub on_message_WHO(@) {
@@ -602,6 +639,7 @@ sub on_message_JOIN(@) {
 	else {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"<$target_name> * Joins $sNick ($sIdent\@$sHost)");
 		userOnJoin(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$target_name,$sNick);
+		push @{$hChannelsNicks{$target_name}}, $sNick;
 	}
 	logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"join",$sNick,$target_name,"");
 }
@@ -750,5 +788,17 @@ sub catch_term(@) {
 	}
 	else {
 		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
+	}
+}
+
+sub channelNicksRemove(@) {
+	my ($sChannel,$sNick) = @_;
+	my $index;
+	for ($index=0;$index<=$#{$hChannelsNicks{$sChannel}};$index++ ) {
+		my $currentNick = @{$hChannelsNicks{$sChannel}}[$index];
+		if ( $currentNick eq $sNick) {
+			splice(@{$hChannelsNicks{$sChannel}}, $index, 1);
+			last;
+		}
 	}
 }
