@@ -5,7 +5,7 @@
 
 WHAT IS MEDIABOT?
 
-  Mediabot is a Net::Async::IRC bot tested on Undernet ircu server (but it may supports other networks)
+  Mediabot is a Net::Async::IRC bot tested on Undernet ircu server and Freenode (but it may supports other networks)
   The bot join a console channel where it will notice its action
   Read INSTALL file to know how to deploy it.
 Read COMMANDS files to know how to register it at first use and refer to bot log file to know what is going on.
