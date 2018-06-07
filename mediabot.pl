@@ -40,6 +40,7 @@ use Mediabot::Channel;
 use Mediabot::Commands;
 use Mediabot::Core;
 use Mediabot::User;
+use Mediabot::Plugins;
 
 # +---------------------------------------------------------------------------+
 # !          SETTINGS                                                         !
@@ -533,7 +534,7 @@ sub on_message_PRIVMSG(@) {
         }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
-			
+			displayYoutubeDetails(\%MAIN_CONF,$LOG,$dbh,$self,$message,$who,$where,$what);
 		}
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
 	}
