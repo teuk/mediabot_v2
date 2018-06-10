@@ -20,6 +20,9 @@ sub mbPluginCommand(@) {
 		case "plugin"				{ $bFound = 1;
 													botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"I'm a dummy plugin");
 												}
+		case "date"					{ $bFound = 1;
+													displayDate(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		else								{
 													
 												}
@@ -120,5 +123,17 @@ sub displayYoutubeDetails(@) {
 	}
 	else {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"displayYoutubeDetails() sYoutubeId could not be determined");
+	}
+}
+
+sub displayDate(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $lang = Date::Language->new('French');
+	if (defined($tArgs[0]) && ( $tArgs[0] =~ /fr/i )) {
+		botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"France : " . $lang->time2str("%A %d/%m/%Y %H:%M:%S",(time + 21600)));
+	}
+	else {
+		botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Québec : " . $lang->time2str("%A %d/%m/%Y %H:%M:%S",time));
 	}
 }
