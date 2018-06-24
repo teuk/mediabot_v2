@@ -8,6 +8,8 @@ use Switch;
 use String::IRC;
 use Mediabot::Common;
 use Mediabot::Core;
+use DateTime;
+use DateTime::TimeZone;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(displayYoutubeDetails mbPluginCommand);
@@ -129,11 +131,16 @@ sub displayYoutubeDetails(@) {
 sub displayDate(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	my $lang = Date::Language->new('French');
-	if (defined($tArgs[0]) && ( $tArgs[0] =~ /fr/i )) {
-		botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"France : " . $lang->time2str("%A %d/%m/%Y %H:%M:%S",(time + 21600)));
+	my $sDefaultTZ = 'America/New_York';
+	if (defined($tArgs[0])) {
+		if ( $tArgs[0] =~ /^fr$/i ) {
+			$sDefaultTZ = 'Europe/Paris';
+		}
+		else {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Invalid parameter");	
+			return undef;
+		}
 	}
-	else {
-		botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Québec : " . $lang->time2str("%A %d/%m/%Y %H:%M:%S",time));
-	}
+	my $time = DateTime->now( time_zone => $sDefaultTZ );
+	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sDefaultTZ : " . $time->format_cldr("cccc dd/MM/yyyy HH:mm:ss"));
 }
