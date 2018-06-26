@@ -359,6 +359,10 @@ sub on_login(@) {
 	}
 	$loop->add( $timer );
 	$timer->start;
+	foreach my $notifier ($loop->notifiers) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$notifier->notifier_name);
+	}
+	
 }
 
 sub on_private(@) {
