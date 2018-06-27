@@ -4,12 +4,32 @@ INSTALLING Mediabotv2
 
 You need to install MySQL or MariaDB first (refer to documentation depending on your linux distribution).
 
+YOU NEED A MYSQL USER AND ITS PASSWORD WITH CREATE DATABASE RIGHTS (USUALLY ROOT) TO BE ABLE TO RUN configure SCRIPT !
+
 Create a non-privileged user for the bot (ex : mediabot).
+
+as root user :
+
+# useradd -m mediabot
 
 You will then need to add sudo rights for it for the configuration stage (you can remove this right after).
 
+as root user add the following line to /etc/sudoers
+
+mediabot   ALL=(ALL) NOPASSWD:ALL
+
+Then change user to mediabot with
+
+# su - mediabot
+
+Then git clone the source code :
+
+$ git clone https://github.com/teuk/mediabot_v2
+
 Run ./configure and follow all steps
 
+$ cd mediabot_v2
+$ ./configure
 
 
 RUNNING Mediabotv2

@@ -306,6 +306,15 @@ $loop->run;
 
 sub on_timer_tick(@) {
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"on_timer_tick() tick");
+	# update pid file
+	my $sPidFilename = $MAIN_CONF{'main.MAIN_PID_FILE'};
+	unless (open PID, ">$sPidFilename") {
+		print STDERR "Could not open $sPidFilename for writing.\n";
+	}
+	else {
+		print PID "$$";
+		close PID;
+	}
 	unless ($irc->is_connected) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Disconnected from server");
 		clean_and_exit(\%MAIN_CONF,$LOG,undef,$dbh,0);
