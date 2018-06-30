@@ -142,6 +142,16 @@ sub mbCommandPublic(@) {
 													unless ( $bFound ) {
 														$bFound = mbDbCommand(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs);
 													}
+													unless ( $bFound ) {
+														my $what = join(" ",($sCommand,@tArgs));
+														log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"what $what");
+														switch($what) {
+															case /how\s+old\s+are\s+you|how\s+old\s+r\s+you|how\s+old\s+r\s+u/i {
+																$bFound = 1;
+																displayBirthDate(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+															}
+														}
+													}
 												}
 	}
 	unless ( $bFound ) {

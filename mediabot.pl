@@ -538,13 +538,21 @@ sub on_message_PRIVMSG(@) {
 	if ( substr($where,0,1) eq '#' ) {
 		# Message on channel
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"$where: <$who> $what");
+		my ($sCommand,@tArgs) = split(/\s+/,$what);
 		if (substr($what, 0, 1) eq $MAIN_CONF{'main.MAIN_PROG_CMD_CHAR'}) {
-        my ($sCommand,@tArgs) = split(/\s+/,$what);
         $sCommand = substr($sCommand,1);
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
         	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
         }
+		}
+		elsif ($sCommand eq $self->nick_folded) {
+			$what =~ s/^\S+\s*//;
+			($sCommand,@tArgs) = split(/\s+/,$what);
+			$sCommand =~ tr/A-Z/a-z/;
+      if (defined($sCommand) && ($sCommand ne "")) {
+      	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
+      }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
 			displayYoutubeDetails(\%MAIN_CONF,$LOG,$dbh,$self,$message,$who,$where,$what);

@@ -8,11 +8,13 @@ use Switch;
 use String::IRC;
 use Mediabot::Common;
 use Mediabot::Core;
+use Date::Format;
+use Date::Manip;
 use DateTime;
 use DateTime::TimeZone;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(displayYoutubeDetails mbPluginCommand);
+@EXPORT  = qw(displayYoutubeDetails displayBirthDate mbPluginCommand);
 
 sub mbPluginCommand(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$sCommand,@tArgs) = @_;
@@ -24,6 +26,9 @@ sub mbPluginCommand(@) {
 												}
 		case "date"					{ $bFound = 1;
 													displayDate(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
+		case "birthdate"		{ $bFound = 1;
+													displayBirthDate(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
 		else								{
 													
@@ -144,3 +149,45 @@ sub displayDate(@) {
 	my $time = DateTime->now( time_zone => $sDefaultTZ );
 	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sDefaultTZ : " . $time->format_cldr("cccc dd/MM/yyyy HH:mm:ss"));
 }
+
+sub displayBirthDate(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $iSecs = time - 1517912148;
+	my $err;
+	my $delta = DateCalc(time2str("%c",1517912148),"today",\$err,1);
+	my ($years,$months,$weeks,$days,$hours,$minutes,$seconds) = split(/:/,$delta);
+	my $sBirthDate = time2str("I was born on %m/%d/%Y at %H:%M:%S. ",1517912148);
+	my $sAnswer = "I am ";
+	if ( defined($years) && ($years > 0) ) {
+		$years =~ s/^\+//;
+		$sAnswer .= "$years year";
+		if ( $years > 1 ) {
+			$sAnswer .= "s ";
+		}
+		else {
+			$sAnswer .= " ";
+		}
+	}
+	if ( defined($months) && ($months > 0)) {
+		$sAnswer .= "$months month";
+		if ( $months > 1 ) {
+			$sAnswer .= "s ";
+		}
+		else {
+			$sAnswer .= " ";
+		}
+	}
+
+	if ( defined($days) && ($days > 0)) {
+		$sAnswer .= "$days day";
+		if ( $days > 1 ) {
+			$sAnswer .= "s ";
+		}
+		else {
+			$sAnswer .= " ";
+		}
+	}
+	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sBirthDate . $sAnswer . "old");
+}
+
