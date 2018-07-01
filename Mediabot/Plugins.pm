@@ -155,9 +155,9 @@ sub displayBirthDate(@) {
 	my %MAIN_CONF = %$Config;
 	my $iSecs = time - 1517912148;
 	my $err;
-	my $delta = DateCalc(time2str("%c",1517912148),"today",\$err,1);
+	my $delta = DateCalc(time2str("%c",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'}),"today",\$err,1);
 	my ($years,$months,$weeks,$days,$hours,$minutes,$seconds) = split(/:/,$delta);
-	my $sBirthDate = time2str("I was born on %m/%d/%Y at %H:%M:%S. ",1517912148);
+	my $sBirthDate = time2str("I was born on %m/%d/%Y at %H:%M:%S. ",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'});
 	my $sAnswer = "I am ";
 	if ( defined($years) && ($years > 0) ) {
 		$years =~ s/^\+//;
