@@ -153,7 +153,7 @@ sub displayDate(@) {
 sub displayBirthDate(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	my $iSecs = time - 1517912148;
+	my $iSecs = time - $MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'};
 	my $err;
 	my $delta = DateCalc(time2str("%c",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'}),"today",\$err,1);
 	my ($years,$months,$weeks,$days,$hours,$minutes,$seconds) = split(/:/,$delta);
