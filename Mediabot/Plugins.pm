@@ -153,41 +153,36 @@ sub displayDate(@) {
 sub displayBirthDate(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	my $iSecs = time - $MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'};
-	my $err;
-	my $delta = DateCalc(time2str("%c",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'}),"today",\$err,1);
-	my ($years,$months,$weeks,$days,$hours,$minutes,$seconds) = split(/:/,$delta);
-	my $sBirthDate = time2str("I was born on %m/%d/%Y at %H:%M:%S. ",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'});
-	my $sAnswer = "I am ";
-	if ( defined($years) && ($years > 0) ) {
-		$years =~ s/^\+//;
-		$sAnswer .= "$years year";
-		if ( $years > 1 ) {
-			$sAnswer .= "s ";
-		}
-		else {
-			$sAnswer .= " ";
-		}
-	}
-	if ( defined($months) && ($months > 0)) {
-		$sAnswer .= "$months month";
-		if ( $months > 1 ) {
-			$sAnswer .= "s ";
-		}
-		else {
-			$sAnswer .= " ";
-		}
+	my $sBirthDate = time2str("I was born on %m/%d/%Y at %H:%M:%S.",$MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'});
+	my $d = time() - $MAIN_CONF{'main.MAIN_PROG_BIRTHDATE'};
+	my @int = (
+	    [ 'second', 1                ],
+	    [ 'minute', 60               ],
+	    [ 'hour',   60*60            ],
+	    [ 'day',    60*60*24         ],
+	    [ 'week',   60*60*24*7       ],
+	    [ 'month',  60*60*24*30.5    ],
+	    [ 'year',   60*60*24*30.5*12 ]
+	);
+	my $i = $#int;
+	my @r;
+	while ( ($i>=0) && ($d) )
+	{
+	    if ($d / $int[$i] -> [1] >= 1)
+	    {
+	        push @r, sprintf "%d %s%s",
+	                     $d / $int[$i] -> [1],
+	                     $int[$i]->[0],
+	                     ( sprintf "%d", $d / $int[$i] -> [1] ) > 1
+	                         ? 's'
+	                         : '';
+	    }
+	    $d %= $int[$i] -> [1];
+	    $i--;
 	}
 
-	if ( defined($days) && ($days > 0)) {
-		$sAnswer .= "$days day";
-		if ( $days > 1 ) {
-			$sAnswer .= "s ";
-		}
-		else {
-			$sAnswer .= " ";
-		}
-	}
-	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sBirthDate . $sAnswer . "old");
+	my $runtime = join ", ", @r if @r;
+	
+	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sBirthDate I am $runtime old");
 }
 
