@@ -48,6 +48,7 @@ Date::Language
 Date::Format
 Date::Manip
 Date::Parse
+DateTime
 IO::Async::Loop
 Net::Async::IRC
 String::IRC
@@ -80,6 +81,7 @@ Date::Language
 Date::Format
 Date::Manip
 Date::Parse
+DateTime
 IO::Async::Loop
 Net::Async::IRC
 String::IRC
