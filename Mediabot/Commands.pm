@@ -1064,7 +1064,7 @@ sub mbDbShowCommand(@) {
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 		my $sCommand = $tArgs[0];
-		my $sQuery = "SELECT * FROM PUBLIC_COMMANDS WHERE command LIKE ?";
+		my $sQuery = "SELECT id_user,creation_date,action,PUBLIC_COMMANDS_CATEGORY.description as category FROM PUBLIC_COMMANDS,PUBLIC_COMMANDS_CATEGORY WHERE PUBLIC_COMMANDS.id_public_commands_category=PUBLIC_COMMANDS_CATEGORY.id_public_commands_category AND command LIKE ?";
 		my $sth = $dbh->prepare($sQuery);
 		unless ($sth->execute($sCommand)) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -1072,6 +1072,7 @@ sub mbDbShowCommand(@) {
 		else {
 			if (my $ref = $sth->fetchrow_hashref()) {
 				my $id_user = $ref->{'id_user'};
+				my $sCategory = $ref->{'category'};
 				my $sUserHandle = "Unknown";
 				my $sCreationDate = $ref->{'creation_date'};
 				my $sAction = $ref->{'action'};
@@ -1089,7 +1090,7 @@ sub mbDbShowCommand(@) {
 					$sth2->finish;
 				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command : $sCommand Author : $sUserHandle Created : $sCreationDate");
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Action : $sAction");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Category : $sCategory Action : $sAction");
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
