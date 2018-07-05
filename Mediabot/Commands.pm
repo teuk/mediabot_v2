@@ -137,6 +137,9 @@ sub mbCommandPublic(@) {
 		case "addcatcmd"		{ $bFound = 1;
 														mbDbAddCategoryCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "chcatcmd"			{ $bFound = 1;
+														mbDbChangeCategoryCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "nicklist"			{ $bFound = 1;
 														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
@@ -935,7 +938,7 @@ sub mbDbModCommand(@) {
 	}
 }
 
-# addcatcmd <new_catgeroy>
+# addcatcmd <new_category>
 sub mbDbAddCategoryCommand(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
@@ -981,6 +984,73 @@ sub mbDbAddCategoryCommand(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " addcatcmd command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# chcatcmd <new_category> <command>
+sub mbDbChangeCategoryCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
+					my $sCategory = $tArgs[0];
+					my $sQuery = "SELECT id_public_commands_category FROM PUBLIC_COMMANDS_CATEGORY WHERE description LIKE ?";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sCategory)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						unless (my $ref = $sth->fetchrow_hashref()) {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Category $sCategory does not exist");
+							$sth->finish;
+						}
+						else {
+							my $id_public_commands_category = $ref->{'id_public_commands_category'};
+							$sQuery = "SELECT id_public_commands FROM PUBLIC_COMMANDS WHERE command LIKE ?";
+							# Change category
+							$sth = $dbh->prepare($sQuery);
+							unless ($sth->execute($tArgs[1])) {
+								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+							}
+							else {
+								unless (my $ref = $sth->fetchrow_hashref()) {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command " . $tArgs[1] . " does not exist");
+									$sth->finish;
+								}
+								else {
+									$sQuery = "UPDATE PUBLIC_COMMANDS SET id_public_commands_category=? WHERE command like ?";
+									$sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($id_public_commands_category,$tArgs[1])) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+									}
+									else {
+										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Changed category to $sCategory for " . $tArgs[1]);
+									}
+								}
+							}
+						}
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax chcatcmd <new_category> <command>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " chcatcmd command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " chcatcmd command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;

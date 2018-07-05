@@ -632,7 +632,7 @@ sub on_message_RPL_ENDOFNAMES(@) {
 	my ($target_name) = @{$hints}{qw<target_name>};
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,2,"on_message_RPL_ENDOFNAMES() $target_name");
 	$hChannelsNicksEnd{$target_name} = 1;
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"on_message_RPL_ENDOFNAMES() " . Dumper(@{$hChannelsNicks{$target_name}}));
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"on_message_RPL_ENDOFNAMES() " . Dumper(@{$hChannelsNicks{$target_name}}));
 }
 
 sub on_message_WHO(@) {
