@@ -2451,7 +2451,7 @@ sub userInfo(@) {
 								my $auth = $ref->{'auth'};
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User : $sUser (Id: $id_user - $sDescription) - created $creation_date - last login $last_login");
 								my $sPasswordSet = (defined($sPassword) ? "Password set" : "Password is not set" );
-								my $sLoggedIn = (($auth) ? "logged in" : "not loegged in" );
+								my $sLoggedIn = (($auth) ? "logged in" : "not logged in" );
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sPasswordSet ($sLoggedIn)");
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Hostmasks : $sHostmasks");
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Infos : " . (defined($sInfo1) ? $sInfo1 : "N/A") . " - " . (defined($sInfo2) ? $sInfo2 : "N/A"));
