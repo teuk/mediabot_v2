@@ -44,6 +44,9 @@ sub mbCommandPublic(@) {
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "addhost"			{ $bFound = 1;
+													addUserHost(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "addchan"			{ $bFound = 1;
 													addChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -217,6 +220,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "addhost"			{ $bFound = 1;
+													addUserHost(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "addchan"			{ $bFound = 1;
 													addChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);

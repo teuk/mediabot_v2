@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser channelAddUser channelDelUser channelJoin channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -196,13 +196,13 @@ sub checkAuth(@) {
 	}
 	else {	
 		if (my $ref = $sth->fetchrow_hashref()) {
-			my $sSetAuthQuery = "UPDATE USER SET auth=1 WHERE id_user=?";
-			my $sth2 = $dbh->prepare($sSetAuthQuery);
+			my $sQuery = "UPDATE USER SET auth=1 WHERE id_user=?";
+			my $sth2 = $dbh->prepare($sQuery);
 			unless ($sth2->execute($iUserId)) {
-				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"checkAuth() SQL Error : " . $DBI::errstr . " Query : " . $sSetAuthQuery);
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"checkAuth() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 				return 0;
 			}
-			my $sQuery = "UPDATE USER SET last_login=? WHERE id_user =?";
+			$sQuery = "UPDATE USER SET last_login=? WHERE id_user =?";
 			$sth = $dbh->prepare($sQuery);
 			unless ($sth->execute(time2str("%Y-%m-%d %H-%M-%S",time),$iUserId)) {
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"checkAuth() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -2339,6 +2339,86 @@ sub channelStatLines(@) {
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
+		}
+	}
+}
+
+#addhost <username> <hostmask>
+sub addUserHost(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"addUserHost() " . $tArgs[0] . " " . $tArgs[1]);
+					my $id_user = getIdUser(\%MAIN_CONF,$LOG,$dbh,$tArgs[0]);
+					unless (defined($id_user)) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User " . $tArgs[0] . " does not exists");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost","User " . $tArgs[0] . " does not exists");
+						return undef;
+					}
+					else {
+						my $sQuery = "SELECT nickname FROM USER WHERE hostmasks LIKE '%" . $tArgs[1] . "%'";
+						my $sth = $dbh->prepare($sQuery);
+						unless ($sth->execute()) {
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"addUserHost() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+						}
+						else {
+							if (my $ref = $sth->fetchrow_hashref()) {
+								my $sUser = $ref->{'nickname'};
+								my $sNoticeMsg = $message->prefix . " Hostmask " . $tArgs[1] . " already exist for user for user $sUser";
+								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,$sNoticeMsg);
+								noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+								logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost",$sNoticeMsg);
+							}
+							else {
+								$sQuery = "SELECT hostmasks FROM USER WHERE id_user=?";
+								$sth = $dbh->prepare($sQuery);
+								unless ($sth->execute($id_user)) {
+									log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"addUserHost() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+								}
+								else {
+									my $sHostmasks = "";
+									if (my $ref = $sth->fetchrow_hashref()) {
+										$sHostmasks = $ref->{'hostmasks'};
+									}
+									$sQuery = "UPDATE USER SET hostmasks=? WHERE id_user=?";
+									$sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($sHostmasks . "," . $tArgs[1],$id_user)) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"addUserHost() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+									}
+									else {
+										my $sNoticeMsg = $message->prefix . " Hostmask " . $tArgs[1] . " added for user " . $tArgs[0];
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,$sNoticeMsg);
+										noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost",$sNoticeMsg);
+									}
+								}
+							}
+						}
+						$sth->finish;
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: addhost <username> <hostmask>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix;
+				$sNoticeMsg .= " addhost command attempt, (command level [1] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"This command is not available for your level. Contact a bot master.");
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost",$sNoticeMsg);
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix;
+			$sNoticeMsg .= " addhost command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command : /msg " . $irc->nick_folded . " login username password");
+			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost",$sNoticeMsg);
 		}
 	}
 }
