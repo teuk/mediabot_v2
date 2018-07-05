@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -2419,6 +2419,68 @@ sub addUserHost(@) {
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command : /msg " . $irc->nick_folded . " login username password");
 			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addhost",$sNoticeMsg);
+		}
+	}
+}
+
+#userinfo <username>
+sub userInfo(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+						my $sQuery = "SELECT * FROM USER,USER_LEVEL WHERE USER.id_user_level=USER_LEVEL.id_user_level AND nickname LIKE ?";
+						my $sth = $dbh->prepare($sQuery);
+						unless ($sth->execute($tArgs[0])) {
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"addUserHost() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+						}
+						else {
+							if (my $ref = $sth->fetchrow_hashref()) {
+								my $id_user = $ref->{'id_user'};
+								my $sUser = $ref->{'nickname'};
+								my $creation_date = $ref->{'creation_date'};
+								my $sHostmasks = $ref->{'hostmasks'};
+								my $sPassword = $ref->{'password'};
+								my $sDescription = $ref->{'description'};
+								my $sInfo1 = $ref->{'info1'};
+								my $sInfo2 = $ref->{'info2'};								
+								my $last_login = $ref->{'last_login'};
+								my $auth = $ref->{'auth'};
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User : $sUser (Id: $id_user - $sDescription) - created $creation_date - last login $last_login");
+								my $sPasswordSet = (defined($sPassword) ? "Password set" : "Password is not set" );
+								my $sLoggedIn = (($auth) ? "logged in" : "not loegged in" );
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User : $sUser ($sDescription) - created $creation_date - last login $last_login");
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sPasswordSet ($sLoggedIn)");
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Hostmasks : $sHostmasks");
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Infos : " . (defined($sInfo1) ? $sInfo1 : "N/A") . " - " . (defined($sInfo2) ? $sInfo2 : "N/A"));
+							}
+							else {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User " . $tArgs[0] . " does not exist");
+							}	
+							$sth->finish;
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: userinfo <username>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix;
+				$sNoticeMsg .= " userinfo command attempt, (command level [1] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"This command is not available for your level. Contact a bot master.");
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"userinfo",$sNoticeMsg);
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix;
+			$sNoticeMsg .= " userinfo command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command : /msg " . $irc->nick_folded . " login username password");
+			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"userinfo",$sNoticeMsg);
 		}
 	}
 }
