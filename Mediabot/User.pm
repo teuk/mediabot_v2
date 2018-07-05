@@ -2454,11 +2454,15 @@ sub userInfo(@) {
 								my $sLoggedIn = (($auth) ? "logged in" : "not logged in" );
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sPasswordSet ($sLoggedIn)");
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Hostmasks : $sHostmasks");
-								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Infos : " . (defined($sInfo1) ? $sInfo1 : "N/A") . " - " . (defined($sInfo2) ? $sInfo2 : "N/A"));
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Infos : " . (defined($sInfo1) ? $sInfo1 : "N/A") . " - " . (defined($sInfo2) ? $sInfo2 : "N/A"));								
 							}
 							else {
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User " . $tArgs[0] . " does not exist");
-							}	
+							}
+							my $sNoticeMsg = $message->prefix . " userinfo on " . $tArgs[0]);
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,$sNoticeMsg);
+							noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"userinfo",$sNoticeMsg);
 							$sth->finish;
 					}
 				}
