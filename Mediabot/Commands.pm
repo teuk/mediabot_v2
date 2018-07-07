@@ -347,7 +347,7 @@ sub mbDebug(@) {
 					return %MAIN_CONF;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : debug <debug_level>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: debug <debug_level>");
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"debug_level 0 to 5");
 					return ();
 				}
@@ -729,7 +729,7 @@ sub mbDbAddCommand(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax addcmd <command> <message|action> <category> <text>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: addcmd <command> <message|action> <category> <text>");
 				}
 			}
 			else {
@@ -790,7 +790,7 @@ sub mbDbRemCommand(@) {
 					$sth->finish;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax remcmd <command>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: remcmd <command>");
 				}
 			}
 			else {
@@ -852,7 +852,7 @@ sub mbDbMvCommand(@) {
 					$sth->finish;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax mvcmd <command_old> <command_new>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: mvcmd <command_old> <command_new>");
 				}
 			}
 			else {
@@ -931,7 +931,7 @@ sub mbDbModCommand(@) {
 					$sth->finish;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax modcmd <command> <message|action> <category> <text>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: modcmd <command> <message|action> <category> <text>");
 				}
 			}
 			else {
@@ -984,7 +984,7 @@ sub mbDbAddCategoryCommand(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax addcatcmd <new_catgeroy>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: addcatcmd <new_catgeroy>");
 				}
 			}
 			else {
@@ -1051,7 +1051,7 @@ sub mbDbChangeCategoryCommand(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax chcatcmd <new_category> <command>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chcatcmd <new_category> <command>");
 				}
 			}
 			else {
@@ -1111,7 +1111,7 @@ sub mbDbShowCommand(@) {
 		$sth->finish;
 	}
 	else {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcmd <command>");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: showcmd <command>");
 		return undef;
 	}
 }
@@ -1197,7 +1197,7 @@ sub mbDbSearchCommand(@) {
 		}
 	}
 	else {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : searchcmd <keyword>");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: searchcmd <keyword>");
 		return undef;
 	}
 }

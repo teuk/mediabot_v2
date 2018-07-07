@@ -1097,7 +1097,7 @@ sub channelPart(@) {
 					shift @tArgs;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : part <#channel>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: part <#channel>");
 					return undef;
 				}
 			}
@@ -1176,7 +1176,7 @@ sub channelJoin(@) {
 				}
 			}
 			else {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : join <#channel>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: join <#channel>");
 				return undef;
 			}
 		}
@@ -1201,7 +1201,7 @@ sub channelAddUser(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: add <#channel> <handle> <level>");
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] =~ /[0-9]+/)) {
@@ -1242,7 +1242,7 @@ sub channelAddUser(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : add <#channel> <handle> <level>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: add <#channel> <handle> <level>");
 				}
 			}
 			else {
@@ -1271,7 +1271,7 @@ sub channelDelUser(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: del <#channel> <handle>");
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,400))) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
@@ -1311,7 +1311,7 @@ sub channelDelUser(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : del <#channel> <handle>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: del <#channel> <handle>");
 				}
 			}
 			else {
@@ -1494,7 +1494,7 @@ sub userOpChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: op #channel <nick>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
@@ -1512,7 +1512,7 @@ sub userOpChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : op #channel <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: op #channel <nick>");
 					return undef;
 				}
 			}
@@ -1544,7 +1544,7 @@ sub userDeopChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: deop #channel <nick>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
@@ -1562,7 +1562,7 @@ sub userDeopChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : deop #channel <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: deop #channel <nick>");
 					return undef;
 				}
 			}
@@ -1594,7 +1594,7 @@ sub userInviteChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: invite #channel <nick>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,100))) {
@@ -1612,7 +1612,7 @@ sub userInviteChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : invite #channel <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: invite #channel <nick>");
 					return undef;
 				}
 			}
@@ -1644,7 +1644,7 @@ sub userVoiceChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: voice #channel <nick>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
@@ -1662,7 +1662,7 @@ sub userVoiceChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : voice #channel <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: voice #channel <nick>");
 					return undef;
 				}
 			}
@@ -1694,7 +1694,7 @@ sub userDevoiceChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: devoice #channel <nick>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,25))) {
@@ -1712,7 +1712,7 @@ sub userDevoiceChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : devoice #channel <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: devoice #channel <nick>");
 					return undef;
 				}
 			}
@@ -1744,7 +1744,7 @@ sub userKickChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: kick #channel <nick> [reason]");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
@@ -1765,7 +1765,7 @@ sub userKickChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : kick #channel <nick> [reason]");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: kick #channel <nick> [reason]");
 					return undef;
 				}
 			}
@@ -1797,7 +1797,7 @@ sub userTopicChannel(@) {
 				shift @tArgs;
 			}
 			unless (defined($sChannel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: topic #channel <topic>");
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,50))) {
@@ -1815,7 +1815,7 @@ sub userTopicChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : topic #channel <topic>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: topic #channel <topic>");
 					return undef;
 				}
 			}
@@ -1848,7 +1848,7 @@ sub userShowcommandsChannel(@) {
 					shift @tArgs;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : showcommands #channel");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: showcommands #channel");
 					return undef;
 				}
 			}
@@ -1884,7 +1884,7 @@ sub userChannelInfo(@) {
 		shift @tArgs;
 	}
 	unless (defined($sChannel)) {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : chaninfo #channel");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chaninfo #channel");
 		return undef;
 	}
 	my $sQuery = "SELECT nickname,last_login FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND level=500";
@@ -1923,7 +1923,7 @@ sub channelNickList(@) {
 					shift @tArgs;
 				}
 				unless (defined($sChannel)) {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : nicklist #channel");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: nicklist #channel");
 					return undef;
 				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Users on $sChannel : " . join(" ",@{$hChannelsNicks{$sChannel}}));
@@ -1958,7 +1958,7 @@ sub randomChannelNick(@) {
 					shift @tArgs;
 				}
 				unless (defined($sChannel)) {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : rnick #channel");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: rnick #channel");
 					return undef;
 				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Random nick on $sChannel : " . getRandomNick(\%hChannelsNicks,$sChannel));
@@ -2025,31 +2025,37 @@ sub userWhoAmI(@) {
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Nick : $sNick");
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Hostmask : " . $message->prefix);
-			if (defined($sMatchingUserHandle)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Handle : $sMatchingUserHandle");
-			}
-			if (defined($iMatchingUserLevel)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Level : " . $iMatchingUserLevelDesc);
-			}
-			if (defined($sMatchingUserInfo1)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Info1 : $sMatchingUserInfo1");
-			}
-			if (defined($sMatchingUserInfo2)) {
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Info2 : $sMatchingUserInfo2");
-			}
-			my $sQuery = "SELECT creation_date,last_login FROM USER WHERE id_user=?";
+			my $sNoticeMsg = "User $sMatchingUserHandle ($iMatchingUserLevelDesc)";
+			my $sQuery = "SELECT password,hostmasks,creation_date,last_login FROM USER WHERE id_user=?";
 			my $sth = $dbh->prepare($sQuery);
 			unless ($sth->execute($iMatchingUserId)) {
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 			}
 			else {
 				if (my $ref = $sth->fetchrow_hashref()) {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Creation date : " . $ref->{'creation_date'});
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Last login : " . $ref->{'last_login'});
+					my $sPasswordSet = defined($ref->{'creation_date'}) ? "Password set" : "Password not set";
+					$sNoticeMsg .= " - created " . $ref->{'creation_date'} . " - last login " . $ref->{'last_login'};
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sPasswordSet);
+					$sNoticeMsg = "Hostmasks : " . $ref->{'hostmasks'};
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
 				}
 			}
+			$sNoticeMsg = "Infos : ";
+			if (defined($sMatchingUserInfo1)) {
+				$sNoticeMsg .= $sMatchingUserInfo1;
+			}
+			else {
+				$sNoticeMsg .= "N/A";
+			}
+			$sNoticeMsg .= " - ";
+			if (defined($sMatchingUserInfo2)) {
+				$sNoticeMsg .= $sMatchingUserInfo2;
+			}
+			else {
+				$sNoticeMsg .= "N/A";
+			}
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
 			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whoami",@tArgs);
 			$sth->finish;
 		}
@@ -2164,7 +2170,7 @@ sub userVerifyNick(@) {
 		return %WHOIS_VARS;
 	}
 	else {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : verify <nick>");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: verify <nick>");
 	}
 }
 
@@ -2187,7 +2193,7 @@ sub userAuthNick(@) {
 					return %WHOIS_VARS;
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : auth <nick>");
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: auth <nick>");
 				}
 			}
 			else {
@@ -2236,7 +2242,7 @@ sub userAccessChannel(@) {
 		shift @tArgs;
 	}
 	unless (defined($sChannel)) {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: access #channel [=]<nick>");
 		return ();
 	}
 	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
@@ -2285,7 +2291,7 @@ sub userAccessChannel(@) {
 		}
 	}
 	else {
-		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax : access #channel [=]<nick>");
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: access #channel [=]<nick>");
 		return ();
 	}
 }
