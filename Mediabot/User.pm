@@ -1887,7 +1887,7 @@ sub userChannelInfo(@) {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chaninfo #channel");
 		return undef;
 	}
-	my $sQuery = "SELECT nickname,last_login FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND level=500";
+	my $sQuery = "SELECT * FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND level=500";
 	my $sth = $dbh->prepare($sQuery);
 	unless ($sth->execute($sChannel)) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -1896,10 +1896,26 @@ sub userChannelInfo(@) {
 		if (my $ref = $sth->fetchrow_hashref()) {
 			my $sUsername = $ref->{'nickname'};
 			my $sLastLogin = $ref->{'last_login'};
+			my $creation_date = $ref->{'creation_date'};
+			my $description = $ref->{'description'};
+			my $sKey = $ref->{'key'};
+			$sKey = ( defined($sKey) ? $sKey : "Not set" );
+			my $chanmode = $ref->{'chanmode'};
+			my $sAutoJoin = $ref->{'auto_join'};
+			$sAutoJoin = ( $sAutoJoin ? "True" : "False" );
 			unless(defined($sLastLogin) && ($sLastLogin ne "")) {
 				$sLastLogin = "Never";
 			}
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sChannel is registered by $sUsername - last login: $sLastLogin");
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Creation date : $creation_date - Description : $description");
+			my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+			if (defined($iMatchingUserId)) {
+				if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+					if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Chan modes : $chanmode - Key : $sKey - Auto join : $sAutoJoin");
+					}
+				}
+			}
 		}
 		else {
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"The channel $sChannel doesn't appear to be registered");
