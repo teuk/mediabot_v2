@@ -101,6 +101,9 @@ sub mbCommandPublic(@) {
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "chanlist"			{ $bFound = 1;
+													channelList(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -283,6 +286,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "chaninfo"			{ $bFound = 1;
 													userChannelInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
+												}
+		case "chanlist"			{ $bFound = 1;
+													channelList(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "whoami"				{ $bFound = 1;
 													userWhoAmI(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);

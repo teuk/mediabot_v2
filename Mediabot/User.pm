@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelList channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -1923,6 +1923,53 @@ sub userChannelInfo(@) {
 		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chaninfo",@tArgs);
 	}
 	$sth->finish;
+}
+
+# chanlist
+sub channelList(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+					$sChannel = $tArgs[0];
+					shift @tArgs;
+				}
+				unless (defined($sChannel)) {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanlist #channel");
+					return undef;
+				}
+				my $sQuery="SELECT name,count(id_user) as nbUsers FROM CHANNEL,USER_CHANNEL WHERE CHANNEL.id_channel=USER_CHANNEL.id_channel GROUP BY name ORDER by creation_date LIMIT 20";
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute()) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				}
+				else {
+					my $sNoticeMsg = "[#chan (users)] ";
+					while (my $ref = $sth->fetchrow_hashref()) {
+						my $name = $ref->{'name'};
+						my $nbUsers = $ref->{'nbUsers'};
+						$sNoticeMsg .= "$name ($nbUsers) ";
+					}
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " chanlist command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " chanlist command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
 }
 
 # nicklist #channel
