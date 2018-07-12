@@ -134,6 +134,9 @@ sub mbCommandPublic(@) {
 		case "countcmd"			{ $bFound = 1;
 														mbCountCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "topcmd"				{ $bFound = 1;
+														mbTopCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "searchcmd"		{ $bFound = 1;
 														mbDbSearchCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
@@ -1149,6 +1152,34 @@ sub mbCountCommand(@) {
 		}
 		else {
 			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command in database");
+		}
+	}
+	$sth->finish;
+}
+
+# topcmd
+sub mbTopCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $sQuery = "SELECT command,hits FROM PUBLIC_COMMANDS ORDER BY hits DESC LIMIT 20";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute()) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		my $sNbCommandNotice = "Top commands in database : ";
+		my $i = 0;
+		while (my $ref = $sth->fetchrow_hashref()) {
+			my $command = $ref->{'command'};
+			my $hits = $ref->{'hits'};
+			$sNbCommandNotice .= "$command ($hits) ";
+			$i++;
+		}
+		if ( $i ) {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sNbCommandNotice);
+		}
+		else {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No top commands in database");
 		}
 	}
 	$sth->finish;
