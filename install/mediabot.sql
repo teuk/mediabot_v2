@@ -79,7 +79,8 @@ CREATE TABLE `PUBLIC_COMMANDS` (
   `creation_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `command` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `action` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL
+  `action` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `hits` bigint(20) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO `PUBLIC_COMMANDS` (`id_public_commands`, `id_user`, `id_public_commands_category`, `creation_date`, `command`, `description`, `action`) VALUES
