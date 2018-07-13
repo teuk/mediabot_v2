@@ -1901,6 +1901,7 @@ sub userChannelInfo(@) {
 			my $sKey = $ref->{'key'};
 			$sKey = ( defined($sKey) ? $sKey : "Not set" );
 			my $chanmode = $ref->{'chanmode'};
+			$chanmode = ( defined($chanmode) ? $chanmode : "Not set" );
 			my $sAutoJoin = $ref->{'auto_join'};
 			$sAutoJoin = ( $sAutoJoin ? "True" : "False" );
 			unless(defined($sLastLogin) && ($sLastLogin ne "")) {
