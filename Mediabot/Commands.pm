@@ -1108,7 +1108,7 @@ sub mbDbShowCommand(@) {
 				my $sCreationDate = $ref->{'creation_date'};
 				my $sAction = $ref->{'action'};
 				my $hits = $ref->{'hits'};
-				my $sHitsWord = ( $hits > 0 ? "$hits hits" : "0 hit" );
+				my $sHitsWord = ( $hits > 1 ? "$hits hits" : "0 hit" );
 				if (defined($id_user)) {
 					$sQuery = "SELECT * FROM USER WHERE id_user=?";
 					my $sth2 = $dbh->prepare($sQuery);
