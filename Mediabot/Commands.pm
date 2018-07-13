@@ -1095,7 +1095,7 @@ sub mbDbShowCommand(@) {
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 		my $sCommand = $tArgs[0];
-		my $sQuery = "SELECT id_user,creation_date,action,PUBLIC_COMMANDS_CATEGORY.description as category FROM PUBLIC_COMMANDS,PUBLIC_COMMANDS_CATEGORY WHERE PUBLIC_COMMANDS.id_public_commands_category=PUBLIC_COMMANDS_CATEGORY.id_public_commands_category AND command LIKE ?";
+		my $sQuery = "SELECT hits,id_user,creation_date,action,PUBLIC_COMMANDS_CATEGORY.description as category FROM PUBLIC_COMMANDS,PUBLIC_COMMANDS_CATEGORY WHERE PUBLIC_COMMANDS.id_public_commands_category=PUBLIC_COMMANDS_CATEGORY.id_public_commands_category AND command LIKE ?";
 		my $sth = $dbh->prepare($sQuery);
 		unless ($sth->execute($sCommand)) {
 			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -1107,6 +1107,8 @@ sub mbDbShowCommand(@) {
 				my $sUserHandle = "Unknown";
 				my $sCreationDate = $ref->{'creation_date'};
 				my $sAction = $ref->{'action'};
+				my $hits = $ref->{'hits'};
+				my $sHitsWord = ( $hits > 0 ? "$hits hits" : "0 hit" );
 				if (defined($id_user)) {
 					$sQuery = "SELECT * FROM USER WHERE id_user=?";
 					my $sth2 = $dbh->prepare($sQuery);
@@ -1121,7 +1123,7 @@ sub mbDbShowCommand(@) {
 					$sth2->finish;
 				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command : $sCommand Author : $sUserHandle Created : $sCreationDate");
-				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Category : $sCategory Action : $sAction");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sHitsWord Category : $sCategory Action : $sAction");
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
