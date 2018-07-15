@@ -543,7 +543,7 @@ sub on_message_PRIVMSG(@) {
         $sCommand = substr($sCommand,1);
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
-        	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
+        	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
         }
 		}
 		elsif ($sCommand eq $self->nick_folded) {
@@ -551,7 +551,7 @@ sub on_message_PRIVMSG(@) {
 			($sCommand,@tArgs) = split(/\s+/,$what);
 			$sCommand =~ tr/A-Z/a-z/;
       if (defined($sCommand) && ($sCommand ne "")) {
-      	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$where,$who,$sCommand,@tArgs);
+      	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
       }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
@@ -588,7 +588,7 @@ sub on_message_PRIVMSG(@) {
 										    		}
 													}
 	    	else {
-	    		%WHOIS_VARS = mbCommandPrivate(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$who,$sCommand,@tArgs);
+	    		%WHOIS_VARS = mbCommandPrivate(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$who,$sCommand,@tArgs);
 	    	}
 	    }
     }

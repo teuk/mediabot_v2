@@ -17,7 +17,7 @@ use Mediabot::Plugins;
 @EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion mbLastCommand);
 
 sub mbCommandPublic(@) {
-	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
+	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my %hChannelsNicks = %$NVars;
@@ -40,6 +40,9 @@ sub mbCommandPublic(@) {
 												}
 		case "cstat"				{ $bFound = 1;
 													userCstat(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "status"				{ $bFound = 1;
+													mbStatus(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,$sChannel,@tArgs);
 												}
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -194,7 +197,7 @@ sub mbCommandPublic(@) {
 }
 
 sub mbCommandPrivate(@) {
-	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$sNick,$sCommand,@tArgs)	= @_;
+	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my %hChannelsNicks = %$NVars;
@@ -220,6 +223,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "act"					{ $bFound = 1;
 													actChannel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "status"				{ $bFound = 1;
+													mbStatus(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,undef,@tArgs);
 												}
 		case "login"				{ $bFound = 1;
 													userLogin(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -473,14 +479,85 @@ sub mbQuit(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
-				#if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-				#	$irc->write("QUIT :" . join(" ",@tArgs) . "\x0d\x0a");
-				#}
-				#else {
-				#	$irc->write("QUIT\x0d\x0a");
-				#}
 				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"quit",@tArgs);
 				$irc->send_message( "QUIT", undef, join(" ",@tArgs) );
+			}
+			else {
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# status
+sub mbStatus(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				
+				# Uptime
+				my $iUptime = time - $iConnectionTimestamp;
+				my $days = int($iUptime / 86400);
+				my $hours = int(($iUptime - ( $days * 86400 )) / 3600);
+				$hours = sprintf("%02d",$hours);
+				my $minutes = int(($iUptime - ( $days * 86400 ) - ( $hours * 3600 )) / 60);
+				$minutes = sprintf("%02d",$minutes);
+				my $seconds = int($iUptime - ( $days * 86400 ) - ( $hours * 3600 ) - ( $minutes * 60 ));
+				$seconds = sprintf("%02d",$seconds);
+				my $sAnswer = "$days days, $hours" . "h" . "$minutes" . "mn" . "$seconds" . "s";
+				
+				
+				# Memory usage
+				my $mu = Memory::Usage->new();
+				$mu->record('Memory stats');
+
+				my @tMemStateResultsArrayRef = $mu->state();
+				my @tMemStateResults = $tMemStateResultsArrayRef[0][0];
+				
+				my ($iTimestamp,$sMessage,$fVmSize,$fResSetSize,$fSharedMemSize,$sCodeSize,$fDataStackSize);
+				if (defined($tMemStateResults[0][0]) && ($tMemStateResults[0][0] ne "")) {
+					$iTimestamp = $tMemStateResults[0][0];
+				}
+				if (defined($tMemStateResults[0][1]) && ($tMemStateResults[0][1] ne "")) {
+					$sMessage = $tMemStateResults[0][1];
+				}
+				if (defined($tMemStateResults[0][2]) && ($tMemStateResults[0][2] ne "")) {
+					$fVmSize = $tMemStateResults[0][2];
+					$fVmSize = $fVmSize / 1024;
+					$fVmSize = sprintf("%.2f",$fVmSize);
+				}
+				if (defined($tMemStateResults[0][3]) && ($tMemStateResults[0][3] ne "")) {
+					$fResSetSize = $tMemStateResults[0][3];
+					$fResSetSize = $fResSetSize / 1024;
+					$fResSetSize = sprintf("%.2f",$fResSetSize);
+				}
+				if (defined($tMemStateResults[0][4]) && ($tMemStateResults[0][4] ne "")) {
+					$fSharedMemSize = $tMemStateResults[0][4];
+					$fSharedMemSize = $fSharedMemSize / 1024;
+					$fSharedMemSize = sprintf("%.2f",$fSharedMemSize);
+				}
+				if (defined($tMemStateResults[0][5]) && ($tMemStateResults[0][5] ne "")) {
+					$sCodeSize = $tMemStateResults[0][5];
+				}
+				if (defined($tMemStateResults[0][6]) && ($tMemStateResults[0][6] ne "")) {
+					$fDataStackSize = $tMemStateResults[0][6];
+					$fDataStackSize = $fDataStackSize / 1024;
+					$fDataStackSize = sprintf("%.2f",$fDataStackSize);
+				
+				}
+				unless (defined($sAnswer)) {
+					$sAnswer = "Unknown";
+				}
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$MAIN_CONF{'main.MAIN_PROG_NAME'} . " v$MAIN_PROG_VERSION Uptime : $sAnswer");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Memory usage (VM $fVmSize MB) (Resident Set $fResSetSize MB) (Shared Memory $fSharedMemSize MB) (Data and Stack $fDataStackSize MB)");
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
