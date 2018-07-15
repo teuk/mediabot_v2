@@ -502,7 +502,17 @@ sub mbStatus(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
-				
+				my $sUptime = "Unknown";
+				unless (open LOAD, "uptime |") {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Could not exec uptime command");
+				}
+				else {
+					my $line;
+					if (defined($line=<LOAD>)) {
+						chomp($line);
+						$sUptime = $line;
+					}
+				}
 				# Uptime
 				my $iUptime = time - $iConnectionTimestamp;
 				my $days = int($iUptime / 86400);
@@ -558,6 +568,7 @@ sub mbStatus(@) {
 				}
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$MAIN_CONF{'main.MAIN_PROG_NAME'} . " v$MAIN_PROG_VERSION Uptime : $sAnswer");
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Memory usage (VM $fVmSize MB) (Resident Set $fResSetSize MB) (Shared Memory $fSharedMemSize MB) (Data and Stack $fDataStackSize MB)");
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Server's uptime : $sUptime");
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
