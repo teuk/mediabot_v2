@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelList channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelList channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userStats userTopicChannel userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -1966,6 +1966,69 @@ sub channelList(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " chanlist command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# users
+sub userStats(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				my $sQuery="SELECT count(*) as nbUsers FROM USER";
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute()) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				}
+				else {
+					my $sNoticeMsg = "Numbers of users : ";
+					if (my $ref = $sth->fetchrow_hashref()) {
+						my $nbUsers = $ref->{'nbUsers'};
+						$sNoticeMsg .= "$nbUsers - ";
+						$sQuery="SELECT description,count(nickname) as nbUsers FROM USER,USER_LEVEL WHERE USER.id_user_level=USER_LEVEL.id_user_level GROUP BY description ORDER BY level";
+						$sth = $dbh->prepare($sQuery);
+						unless ($sth->execute()) {
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+						}
+						else {
+							my $i = 0;
+							while (my $ref = $sth->fetchrow_hashref()) {
+								my $nbUsers = $ref->{'nbUsers'};
+								my $description = $ref->{'description'};
+								$sNoticeMsg .= "$description($nbUsers) ";
+								$i++;
+							}
+							unless ( $i ) {
+								#This shoud never happen
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No user in database");
+							}
+							else {
+								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+							}
+						}
+					}
+					else {
+						# This should never happen since bot need to be registered
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No user in database");
+					}
+					
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " users command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " users command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;

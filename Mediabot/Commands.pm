@@ -44,6 +44,9 @@ sub mbCommandPublic(@) {
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "users"				{ $bFound = 1;
+													userStats(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "userinfo"			{ $bFound = 1;
 													userInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
@@ -235,6 +238,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "adduser"			{ $bFound = 1;
 													addUser(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "users"				{ $bFound = 1;
+													userStats(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
 		case "userinfo"			{ $bFound = 1;
 													userInfo(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
