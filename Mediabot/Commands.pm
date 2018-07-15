@@ -125,6 +125,9 @@ sub mbCommandPublic(@) {
 		case "mvcmd"				{ $bFound = 1;
 													mbDbMvCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
+		case "chowncmd"			{ $bFound = 1;
+													mbChownCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "showcmd"			{ $bFound = 1;
 													mbDbShowCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
@@ -313,6 +316,9 @@ sub mbCommandPrivate(@) {
 												}
 		case "showcmd"			{ $bFound = 1;
 													mbDbShowCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "chowncmd"			{ $bFound = 1;
+													mbChownCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "nicklist"			{ $bFound = 1;
 														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
@@ -883,6 +889,75 @@ sub mbDbMvCommand(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " mvcmd command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# chowncmd <command> <username>
+sub mbChownCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
+					my $sCommand = $tArgs[0];
+					my $sUsername = $tArgs[1];
+					my $sQuery = "SELECT nickname,USER.id_user,id_public_commands FROM PUBLIC_COMMANDS,USER WHERE PUBLIC_COMMANDS.id_user=USER.id_user AND command LIKE ?";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sCommand)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						if (my $ref = $sth->fetchrow_hashref()) {
+							my $id_public_commands = $ref->{'id_public_commands'};
+							my $id_user = $ref->{'id_user'};
+							my $nickname = $ref->{'nickname'};
+							$sQuery = "SELECT id_user,nickname FROM USER WHERE nickname LIKE ?";
+							$sth = $dbh->prepare($sQuery);
+							unless ($sth->execute($sUsername)) {
+								log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+							}
+							else {
+								if (my $ref = $sth->fetchrow_hashref()) {
+									my $id_user_new = $ref->{'id_user'};
+									$sQuery = "UPDATE PUBLIC_COMMANDS SET id_user=? WHERE id_public_commands=?";
+									$sth = $dbh->prepare($sQuery);
+									unless ($sth->execute($id_user_new,$id_public_commands)) {
+										log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+									}
+									else {
+										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Changed owner of command $sCommand ($nickname -> $sUsername)");
+									}
+								}
+								else {
+									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sUsername user does not exist");
+								}
+							}
+						}
+						else {
+							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
+						}
+					}
+					$sth->finish;
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chowncmd <command> <username>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " chowncmd command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " chowncmd command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
