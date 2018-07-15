@@ -149,6 +149,9 @@ sub mbCommandPublic(@) {
 		case "lastcmd"			{ $bFound = 1;
 														mbLastCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "owncmd"				{ $bFound = 1;
+														mbDbOwnersCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "addcatcmd"		{ $bFound = 1;
 														mbDbAddCategoryCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
@@ -1327,6 +1330,35 @@ sub mbDbSearchCommand(@) {
 		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: searchcmd <keyword>");
 		return undef;
 	}
+}
+
+# owncmd
+sub mbDbOwnersCommand(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my $sQuery = "SELECT nickname,count(command) as nbCommands FROM PUBLIC_COMMANDS,USER WHERE PUBLIC_COMMANDS.id_user=USER.id_user GROUP by nickname ORDER BY nbCommands DESC";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute()) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		my $sResponse = "Number of commands by user : ";
+		my $i = 0;
+		while (my $ref = $sth->fetchrow_hashref()) {
+			my $nickname = $ref->{'nickname'};
+			my $nbCommands = $ref->{'nbCommands'};
+			$sResponse .= "$nickname($nbCommands) ";
+			$i++;
+		}
+		unless ( $i ) {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"not found");
+		}
+		else {
+			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
+		}
+	}
+	$sth->finish;
+	
 }
 
 # nick <nick>
