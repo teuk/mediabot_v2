@@ -1313,25 +1313,36 @@ sub mbDbShowCommand(@) {
 sub mbCountCommand(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
-	my $sQuery = "SELECT PUBLIC_COMMANDS_CATEGORY.description as sCategory,count(*) as nbCommands FROM PUBLIC_COMMANDS,PUBLIC_COMMANDS_CATEGORY WHERE PUBLIC_COMMANDS.id_public_commands_category=PUBLIC_COMMANDS_CATEGORY.id_public_commands_category GROUP by PUBLIC_COMMANDS_CATEGORY.description";
+	my $sQuery = "SELECT count(*) as nbCommands FROM PUBLIC_COMMANDS";
 	my $sth = $dbh->prepare($sQuery);
 	unless ($sth->execute()) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 	}
 	else {
-		my $sNbCommandNotice = "Commands in database : ";
-		my $i = 0;
-		while (my $ref = $sth->fetchrow_hashref()) {
-			my $nbCommands = $ref->{'nbCommands'};
-			my $sCategory = $ref->{'sCategory'};
-			$sNbCommandNotice .= "($sCategory $nbCommands) ";
-			$i++;
+		my $nbTotalCommands = 0;
+		if (my $ref = $sth->fetchrow_hashref()) {
+			$nbTotalCommands = $ref->{'nbCommands'};
 		}
-		if ( $i ) {
-			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sNbCommandNotice);
+		$sQuery = "SELECT PUBLIC_COMMANDS_CATEGORY.description as sCategory,count(*) as nbCommands FROM PUBLIC_COMMANDS,PUBLIC_COMMANDS_CATEGORY WHERE PUBLIC_COMMANDS.id_public_commands_category=PUBLIC_COMMANDS_CATEGORY.id_public_commands_category GROUP by PUBLIC_COMMANDS_CATEGORY.description";
+		$sth = $dbh->prepare($sQuery);
+		unless ($sth->execute()) {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 		}
 		else {
-			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command in database");
+			my $sNbCommandNotice = "$nbTotalCommands Commands in database : ";
+			my $i = 0;
+			while (my $ref = $sth->fetchrow_hashref()) {
+				my $nbCommands = $ref->{'nbCommands'};
+				my $sCategory = $ref->{'sCategory'};
+				$sNbCommandNotice .= "($sCategory $nbCommands) ";
+				$i++;
+			}
+			if ( $i ) {
+				botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sNbCommandNotice);
+			}
+			else {
+				botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command in database");
+			}
 		}
 	}
 	$sth->finish;
