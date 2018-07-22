@@ -2151,47 +2151,42 @@ sub userWhoAmI(@) {
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
-		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
-			my $sNoticeMsg = "User $sMatchingUserHandle ($iMatchingUserLevelDesc)";
-			my $sQuery = "SELECT password,hostmasks,creation_date,last_login FROM USER WHERE id_user=?";
-			my $sth = $dbh->prepare($sQuery);
-			unless ($sth->execute($iMatchingUserId)) {
-				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
-			}
-			else {
-				if (my $ref = $sth->fetchrow_hashref()) {
-					my $sPasswordSet = defined($ref->{'creation_date'}) ? "Password set" : "Password not set";
-					$sNoticeMsg .= " - created " . $ref->{'creation_date'} . " - last login " . $ref->{'last_login'};
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sPasswordSet);
-					$sNoticeMsg = "Hostmasks : " . $ref->{'hostmasks'};
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
-				}
-			}
-			$sNoticeMsg = "Infos : ";
-			if (defined($sMatchingUserInfo1)) {
-				$sNoticeMsg .= $sMatchingUserInfo1;
-			}
-			else {
-				$sNoticeMsg .= "N/A";
-			}
-			$sNoticeMsg .= " - ";
-			if (defined($sMatchingUserInfo2)) {
-				$sNoticeMsg .= $sMatchingUserInfo2;
-			}
-			else {
-				$sNoticeMsg .= "N/A";
-			}
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
-			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whoami",@tArgs);
-			$sth->finish;
+		my $sNoticeMsg = "User $sMatchingUserHandle ($iMatchingUserLevelDesc)";
+		my $sQuery = "SELECT password,hostmasks,creation_date,last_login FROM USER WHERE id_user=?";
+		my $sth = $dbh->prepare($sQuery);
+		unless ($sth->execute($iMatchingUserId)) {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 		}
 		else {
-			my $sNoticeMsg = $message->prefix . " whoami command attempt (user $sMatchingUserHandle is not logged in)";
-			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
-			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
-			return undef;
+			if (my $ref = $sth->fetchrow_hashref()) {
+				my $sPasswordSet = defined($ref->{'creation_date'}) ? "Password set" : "Password not set";
+				$sNoticeMsg .= " - created " . $ref->{'creation_date'} . " - last login " . $ref->{'last_login'};
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sPasswordSet);
+				$sNoticeMsg = "Hostmasks : " . $ref->{'hostmasks'};
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+			}
 		}
+		$sNoticeMsg = "Infos : ";
+		if (defined($sMatchingUserInfo1)) {
+			$sNoticeMsg .= $sMatchingUserInfo1;
+		}
+		else {
+			$sNoticeMsg .= "N/A";
+		}
+		$sNoticeMsg .= " - ";
+		if (defined($sMatchingUserInfo2)) {
+			$sNoticeMsg .= $sMatchingUserInfo2;
+		}
+		else {
+			$sNoticeMsg .= "N/A";
+		}
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sNoticeMsg);
+		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whoami",@tArgs);
+		$sth->finish;
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"User not found with this hostmask");
 	}
 }
 
