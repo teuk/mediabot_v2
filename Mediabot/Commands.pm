@@ -164,6 +164,9 @@ sub mbCommandPublic(@) {
 		case "chcatcmd"			{ $bFound = 1;
 														mbDbChangeCategoryCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
+		case "topsay"				{ $bFound = 1;
+														userTopSay(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "nicklist"			{ $bFound = 1;
 														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
