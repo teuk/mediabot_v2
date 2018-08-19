@@ -1385,7 +1385,7 @@ sub mbDbCheckNickHostname(@) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 					my $sNickSearch = $tArgs[0];
-					my $sQuery = "SELECT userhost,count(userhost) as hits FROM CHANNEL_LOG,CHANNEL WHERE CHANNEL_LOG.id_channel=CHANNEL.id_channel AND nick LIKE ? ORDER BY hits DESC LIMIT 10";
+					my $sQuery = "SELECT userhost,count(userhost) as hits FROM CHANNEL_LOG WHERE nick LIKE ? ORDER BY hits DESC LIMIT 10";
 					my $sth = $dbh->prepare($sQuery);
 					unless ($sth->execute($sNickSearch)) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
