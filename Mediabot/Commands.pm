@@ -172,7 +172,10 @@ sub mbCommandPublic(@) {
 														}
 		case "checkhost"		{ $bFound = 1;
 															mbDbCheckHostnameNick(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
-														}
+												}
+		case "checknick"		{ $bFound = 1;
+													mbDbCheckNickHostname(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}		
 		case "nicklist"			{ $bFound = 1;
 														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
@@ -1294,10 +1297,7 @@ sub mbDbCheckHostnameNickChan(@) {
 							$sResponse .= "$sNickFound ($sHitsFound) ";
 							$i++;
 						}
-						if ( $i ) {
-							
-						}
-						else {
+						unless ( $i ) {
 							$sResponse = "No result found for hostname $sHostname on $sChannel";
 						}
 						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
@@ -1348,10 +1348,7 @@ sub mbDbCheckHostnameNick(@) {
 							$sResponse .= "$sNickFound ($sHitsFound) ";
 							$i++;
 						}
-						if ( $i ) {
-							
-						}
-						else {
+						unless ( $i ) {
 							$sResponse = "No result found for hostname : $sHostname";
 						}
 						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
@@ -1371,6 +1368,58 @@ sub mbDbCheckHostnameNick(@) {
 		}
 		else {
 			my $sNoticeMsg = $message->prefix . " checkhost command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+			return undef;
+		}
+	}
+}
+
+# checknick <nick>
+sub mbDbCheckNickHostname(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $sNickSearch = $tArgs[0];
+					my $sQuery = "SELECT userhost,count(userhost) as hits FROM CHANNEL_LOG,CHANNEL WHERE CHANNEL_LOG.id_channel=CHANNEL.id_channel AND nick LIKE ? ORDER BY hits DESC LIMIT 10";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sNickSearch)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						my $sResponse = "Hostmasks for $sNickSearch - ";
+						my $i = 0;
+						while (my $ref = $sth->fetchrow_hashref()) {
+							my $HostmaskFound = $ref->{'userhost'};
+							$HostmaskFound =~ s/^.*!//;
+							my $sHitsFound = $ref->{'hits'};
+							$sResponse .= "$HostmaskFound ($sHitsFound) ";
+							$i++;
+						}
+						unless ( $i ) {
+							$sResponse = "No result found for nick : $sNickSearch";
+						}
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
+						$sth->finish;
+					}
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: checknick <nick>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " checknick command attempt (command level [Master] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+				return undef;
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " checknick command attempt (user $sMatchingUserHandle is not logged in)";
 			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
 			return undef;
