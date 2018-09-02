@@ -545,9 +545,12 @@ sub on_message_PRIVMSG(@) {
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
         	my %GLOBAL_HASH = mbCommandPublic($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
-        	%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
-        	%hTimers = %{$GLOBAL_HASH{'hTimers'}};
-        	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"3) hTimers " . Dumper(%hTimers));
+        	if (exists $GLOBAL_HASH{'WHOIS_VARS'}) {
+        		%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+        	}
+        	if (exists $GLOBAL_HASH{'hTimers'}) {
+        		%hTimers = %{$GLOBAL_HASH{'hTimers'}};
+        	}
         }
 		}
 		elsif ($sCommand eq $self->nick_folded) {
@@ -556,8 +559,12 @@ sub on_message_PRIVMSG(@) {
 			$sCommand =~ tr/A-Z/a-z/;
       if (defined($sCommand) && ($sCommand ne "")) {
       	my %GLOBAL_HASH = mbCommandPublic($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
-      	%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
-        %hTimers = %{$GLOBAL_HASH{'hTimers'}};
+      	if (exists $GLOBAL_HASH{'WHOIS_VARS'}) {
+      		%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+      	}
+      	if (exists $GLOBAL_HASH{'hTimers'}) {
+      		%hTimers = %{$GLOBAL_HASH{'hTimers'}};
+      	}
       }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
@@ -595,8 +602,12 @@ sub on_message_PRIVMSG(@) {
 													}
 	    	else {
 	    		my %GLOBAL_HASH = mbCommandPrivate($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$who,$sCommand,@tArgs);
-	    		%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
-        	%hTimers = %{$GLOBAL_HASH{'hTimers'}};
+	    		if (exists $GLOBAL_HASH{'WHOIS_VARS'}) {
+        		%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+        	}
+        	if (exists $GLOBAL_HASH{'hTimers'}) {
+        		%hTimers = %{$GLOBAL_HASH{'hTimers'}};
+        	}
 	    	}
 	    }
     }

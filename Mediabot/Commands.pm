@@ -200,7 +200,6 @@ sub mbCommandPublic(@) {
 													}
 													unless ( $bFound ) {
 														my $what = join(" ",($sCommand,@tArgs));
-														log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"what $what");
 														switch($what) {
 															case /how\s+old\s+are\s+you|how\s+old\s+r\s+you|how\s+old\s+r\s+u/i {
 																$bFound = 1;
@@ -1705,7 +1704,6 @@ sub mbAddTimer(@) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "") && ($tArgs[1] =~ /[0-9]+/) && defined($tArgs[2]) && ($tArgs[2] ne "")) {
 					my $sTimerName = $tArgs[0];
 					shift @tArgs;
-					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"1) hTimers " . Dumper(%hTimers));
 					if (exists $hTimers{$sTimerName}) {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName already exists");
 						return %hTimers;
@@ -1721,7 +1719,6 @@ sub mbAddTimer(@) {
    						},
 					);
 					$hTimers{$sTimerName} = $timer;
-					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"2) hTimers " . Dumper(%hTimers));
 					$loop->add( $timer );
 					$timer->start;
 					my $sQuery = "INSERT INTO TIMERS (name,duration,command) VALUES (?,?,?)";
@@ -1765,7 +1762,6 @@ sub mbRemTimer(@) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 					my $sTimerName = $tArgs[0];
 					shift @tArgs;
-					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"1) hTimers " . Dumper(%hTimers));
 					unless (exists $hTimers{$sTimerName}) {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName does not exist");
 						return %hTimers;
