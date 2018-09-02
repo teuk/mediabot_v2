@@ -89,6 +89,7 @@ my $iConnectionTimestamp;
 my %WHOIS_VARS;
 my %hChannelsNicks;
 my %hChannelsNicksEnd;
+my %hTimers;
 
 # +---------------------------------------------------------------------------+
 # !          SUBS DECLARATION                                                 !
@@ -332,7 +333,7 @@ sub usage(@) {
 
 sub on_login(@) {
 	my ( $self, $message, $hints ) = @_;
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"on_login() Logged to irc server $CONN_SERVER");
+	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"on_login() Connected to irc server $CONN_SERVER");
 	$iConnectionTimestamp = time;
 	
 	# Undernet : authentication to channel service if credentials are defined
@@ -364,7 +365,7 @@ sub on_login(@) {
   
   # Join other channels
   unless ((($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection.CONN_USERMODE'} =~ /x/)) || (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 2) && defined($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'}) && ($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'} ne ""))) {
-		joinChannels($dbh,$self,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG);
+		%hTimers = joinChannels($loop,\%hTimers,\%MAIN_CONF,$dbh,$self,$LOG);
 	}
 	$loop->add( $timer );
 	$timer->start;
@@ -480,13 +481,13 @@ sub on_message_NOTICE(@) {
 			if (($who eq "X") && (($what =~ /USSIE/) || ($what eq $sSuccesfullLoginEnText)) && defined($MAIN_CONF{'connection.CONN_NETWORK_TYPE'}) && ($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection.CONN_USERMODE'} =~ /x/)) {
 				$self->write("MODE " . $self->nick_folded . " +x\x0d\x0a");
 				$self->change_nick( $MAIN_CONF{'connection.CONN_NICK'} );
-				joinChannels($dbh,$self,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG);
+				%hTimers = joinChannels($loop,\%hTimers,\%MAIN_CONF,$dbh,$self,$LOG);
 		  }
 		}
 		elsif (defined($MAIN_CONF{'connection.CONN_NETWORK_TYPE'}) && ( $MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 2 ) && defined($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'}) && ($MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'} ne "")) {
 			if (($who eq "NickServ") && (($what =~ /This nickname is registered/) && defined($MAIN_CONF{'connection.CONN_NETWORK_TYPE'}) && ($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 2))) {
 				botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$self,"NickServ","identify " . $MAIN_CONF{'freenode.FREENODE_NICKSERV_PASSWORD'});
-				joinChannels($dbh,$self,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG);
+				%hTimers = joinChannels($loop,\%hTimers,\%MAIN_CONF,$dbh,$self,$LOG);
 		  }
 		}
 	}
@@ -543,7 +544,10 @@ sub on_message_PRIVMSG(@) {
         $sCommand = substr($sCommand,1);
         $sCommand =~ tr/A-Z/a-z/;
         if (defined($sCommand) && ($sCommand ne "")) {
-        	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
+        	my %GLOBAL_HASH = mbCommandPublic($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
+        	%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+        	%hTimers = %{$GLOBAL_HASH{'hTimers'}};
+        	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"3) hTimers " . Dumper(%hTimers));
         }
 		}
 		elsif ($sCommand eq $self->nick_folded) {
@@ -551,7 +555,9 @@ sub on_message_PRIVMSG(@) {
 			($sCommand,@tArgs) = split(/\s+/,$what);
 			$sCommand =~ tr/A-Z/a-z/;
       if (defined($sCommand) && ($sCommand ne "")) {
-      	%WHOIS_VARS = mbCommandPublic(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
+      	my %GLOBAL_HASH = mbCommandPublic($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$where,$who,$sCommand,@tArgs);
+      	%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+        %hTimers = %{$GLOBAL_HASH{'hTimers'}};
       }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
@@ -588,7 +594,9 @@ sub on_message_PRIVMSG(@) {
 										    		}
 													}
 	    	else {
-	    		%WHOIS_VARS = mbCommandPrivate(\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$who,$sCommand,@tArgs);
+	    		my %GLOBAL_HASH = mbCommandPrivate($loop,\%hTimers,\%hChannelsNicks,\%WHOIS_VARS,\%MAIN_CONF,$LOG,$dbh,$self,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$who,$sCommand,@tArgs);
+	    		%WHOIS_VARS = %{$GLOBAL_HASH{'WHOIS_VARS'}};
+        	%hTimers = %{$GLOBAL_HASH{'hTimers'}};
 	    	}
 	    }
     }

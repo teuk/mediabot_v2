@@ -6,6 +6,7 @@ require Exporter;
 
 use POSIX 'setsid';
 use Switch;
+use Data::Dumper;
 use Mediabot::Common;
 use Mediabot::Core;
 use Mediabot::Database;
@@ -17,10 +18,11 @@ use Mediabot::Plugins;
 @EXPORT  = qw(getCommandCategory mbChangeNick mbCommandPrivate mbCommandPublic mbDbAddCommand mbDbCommand mbDbModCommand mbDbRemCommand mbDbSearchCommand mbDbShowCommand mbDebug mbJump mbRegister mbRestart mbVersion mbLastCommand);
 
 sub mbCommandPublic(@) {
-	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
+	my ($loop,$TVars,$NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sChannel,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my %hChannelsNicks = %$NVars;
+	my %hTimers = %$TVars;
 	my $bFound = 0;
 	switch($sCommand) {
 		case "quit"					{ $bFound = 1;
@@ -28,6 +30,15 @@ sub mbCommandPublic(@) {
 												}
 		case "nick"					{ $bFound = 1;
 													mbChangeNick(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "addtimer"			{ $bFound = 1;
+													%hTimers = mbAddTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "remtimer"			{ $bFound = 1;
+													%hTimers = mbRemTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "timers"				{ $bFound = 1;
+													mbTimers(\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "msg"					{ $bFound = 1;
 													msgCmd(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -204,15 +215,19 @@ sub mbCommandPublic(@) {
 		return ();
 	}
 	else {
-		return %WHOIS_VARS;
+		my %GLOBAL_HASH;
+		$GLOBAL_HASH{'WHOIS_VARS'} = \%WHOIS_VARS;
+		$GLOBAL_HASH{'hTimers'} = \%hTimers;
+		return %GLOBAL_HASH;
 	}
 }
 
 sub mbCommandPrivate(@) {
-	my ($NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,$sCommand,@tArgs)	= @_;
+	my ($loop,$TVars,$NVars,$WVars,$Config,$LOG,$dbh,$irc,$message,$MAIN_PROG_VERSION,$iConnectionTimestamp,$sNick,$sCommand,@tArgs)	= @_;
 	my %WHOIS_VARS = %$WVars;
 	my %MAIN_CONF = %$Config;
 	my %hChannelsNicks = %$NVars;
+	my %hTimers = %$TVars;
 	my $bFound = 0;
 	switch($sCommand) {
 		case "quit"					{ $bFound = 1;
@@ -220,6 +235,15 @@ sub mbCommandPrivate(@) {
 												}
 		case "nick"					{ $bFound = 1;
 													mbChangeNick(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "addtimer"			{ $bFound = 1;
+													%hTimers = mbAddTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "remtimer"			{ $bFound = 1;
+													%hTimers = mbRemTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
+		case "timers"				{ $bFound = 1;
+													mbTimers(\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "register"			{ $bFound = 1;
 													mbRegister(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -362,7 +386,10 @@ sub mbCommandPrivate(@) {
 		return ();
 	}
 	else {
-		return %WHOIS_VARS;
+		my %GLOBAL_HASH;
+		$GLOBAL_HASH{'WHOIS_VARS'} = \%WHOIS_VARS;
+		$GLOBAL_HASH{'hTimers'} = \%hTimers;
+		return %GLOBAL_HASH;
 	}
 }
 
@@ -1289,7 +1316,7 @@ sub mbDbCheckHostnameNickChan(@) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 					}
 					else {
-						my $sResponse = "Nick for host $sHostname on $sChannel - ";
+						my $sResponse = "Nicks for host $sHostname on $sChannel - ";
 						my $i = 0;
 						while (my $ref = $sth->fetchrow_hashref()) {
 							my $sNickFound = $ref->{'nick'};
@@ -1340,7 +1367,7 @@ sub mbDbCheckHostnameNick(@) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 					}
 					else {
-						my $sResponse = "Nick for host $sHostname - ";
+						my $sResponse = "Nicks for host $sHostname - ";
 						my $i = 0;
 						while (my $ref = $sth->fetchrow_hashref()) {
 							my $sNickFound = $ref->{'nick'};
@@ -1385,7 +1412,7 @@ sub mbDbCheckNickHostname(@) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
 					my $sNickSearch = $tArgs[0];
-					my $sQuery = "SELECT userhost,count(userhost) as hits FROM CHANNEL_LOG WHERE nick LIKE ? ORDER BY hits DESC LIMIT 10";
+					my $sQuery = "SELECT userhost,count(userhost) as hits FROM CHANNEL_LOG WHERE nick LIKE ? GROUP BY userhost ORDER BY hits DESC LIMIT 10";
 					my $sth = $dbh->prepare($sQuery);
 					unless ($sth->execute($sNickSearch)) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -1664,6 +1691,167 @@ sub mbChangeNick(@) {
 			return undef;
 		}
 	}
+}
+
+# addtimer <name> <frequency> <raw>
+sub mbAddTimer(@) {
+	my ($loop,$TVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my %hTimers = %$TVars;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Owner")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "") && ($tArgs[1] =~ /[0-9]+/) && defined($tArgs[2]) && ($tArgs[2] ne "")) {
+					my $sTimerName = $tArgs[0];
+					shift @tArgs;
+					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"1) hTimers " . Dumper(%hTimers));
+					if (exists $hTimers{$sTimerName}) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName already exists");
+						return %hTimers;
+					}
+					my $iFrequency = $tArgs[0];
+					shift @tArgs;
+					my $sRaw = join(" ",@tArgs);
+					my $timer = IO::Async::Timer::Periodic->new(
+					    interval => $iFrequency,
+					    on_tick => sub {
+					    	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"Timer every $iFrequency seconds : $sRaw");
+      					$irc->write("$sRaw\x0d\x0a");
+   						},
+					);
+					$hTimers{$sTimerName} = $timer;
+					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"2) hTimers " . Dumper(%hTimers));
+					$loop->add( $timer );
+					$timer->start;
+					my $sQuery = "INSERT INTO TIMERS (name,duration,command) VALUES (?,?,?)";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sTimerName,$iFrequency,$sRaw)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName added.");
+					}
+					$sth->finish;
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: addtimer <name> <frequency> <raw>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " addtimer command attempt (command level [Owner] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " addtimer command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+		}
+	}
+	return %hTimers;
+}
+
+# remtimer <name>
+sub mbRemTimer(@) {
+	my ($loop,$TVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my %hTimers = %$TVars;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Owner")) {
+				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+					my $sTimerName = $tArgs[0];
+					shift @tArgs;
+					#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"1) hTimers " . Dumper(%hTimers));
+					unless (exists $hTimers{$sTimerName}) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName does not exist");
+						return %hTimers;
+					}
+					$loop->remove($hTimers{$sTimerName});
+					delete $hTimers{$sTimerName};
+					my $sQuery = "DELETE FROM TIMERS WHERE name=?";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sTimerName)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName removed.");
+					}
+					$sth->finish;
+				}
+				else {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: remtimer <name>");
+				}
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " remtimer command attempt (command level [Owner] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " remtimer command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+		}
+	}
+	return %hTimers;
+}
+
+# timers
+sub mbTimers(@) {
+	my ($TVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	my %hTimers = %$TVars;
+	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
+	if (defined($iMatchingUserId)) {
+		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
+			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Owner")) {
+				my $sQuery = "SELECT * FROM TIMERS";
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute()) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				}
+				else {
+					my @tTimers;
+					my $i = 0;
+					while (my $ref = $sth->fetchrow_hashref()) {
+						my $id_timers = $ref->{'id_timers'};
+						my $name = $ref->{'name'};
+						my $duration = $ref->{'duration'};
+						my $command = $ref->{'command'};
+						my $sSecondText = ( $duration > 1 ? "seconds" : "second" );
+						push @tTimers, "$name - id : $id_timers - every $duration $sSecondText - command $command";
+						$i++;
+					}
+					if ( $i ) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Active timers :");
+						foreach (@tTimers) {
+						  botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$_");
+						}
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No active timers");
+					}
+				}
+				$sth->finish;
+			}
+			else {
+				my $sNoticeMsg = $message->prefix . " timers command attempt (command level [Owner] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
+				noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
+			}
+		}
+		else {
+			my $sNoticeMsg = $message->prefix . " timers command attempt (user $sMatchingUserHandle is not logged in)";
+			noticeConsoleChan(\%MAIN_CONF,$LOG,$dbh,$irc,$sNoticeMsg);
+			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command - /msg " . $irc->nick_folded . " login username password");
+		}
+	}
+	return %hTimers;
 }
 
 1;

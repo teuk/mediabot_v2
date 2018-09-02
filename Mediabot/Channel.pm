@@ -12,30 +12,71 @@ use Mediabot::Database;
 @EXPORT  = qw(joinChannels joinChannel getConsoleChan getIdChannel noticeConsoleChan partChannel);
 
 sub joinChannels(@) {
-	my ($dbh,$irc,$MAIN_PROG_DEBUG,$LOG) = @_;
+	# Join channel with auto_join set
+	my ($loop,$TVars,$Config,$dbh,$irc,$LOG) = @_;
+	my %MAIN_CONF = %$Config;
+	my %hTimers = %$TVars;
 	my $sQuery = "SELECT * FROM CHANNEL WHERE auto_join=1 and description !='console'";
 	my $sth = $dbh->prepare($sQuery);
 	unless ($sth->execute()) {
-		log_message($MAIN_PROG_DEBUG,$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 	}
 	else {
 		my $i = 0;
 		while (my $ref = $sth->fetchrow_hashref()) {
 			if ( $i == 0 ) {
-				log_message($MAIN_PROG_DEBUG,$LOG,0,"Auto join channels");
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Auto join channels");
 			}
 			my $id_channel = $ref->{'id_channel'};
 			my $name = $ref->{'name'};
 			my $chanmode = $ref->{'chanmode'};
 			my $key = $ref->{'key'};
-			joinChannel($irc,$MAIN_PROG_DEBUG,$LOG,$name,$key);
+			joinChannel($irc,$MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,$name,$key);
 			$i++;
 		}
 		if ( $i == 0 ) {
-			log_message($MAIN_PROG_DEBUG,$LOG,0,"No channel to auto join");
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No channel to auto join");
+		}
+	}
+	
+	# Set timers at startup
+	$sQuery = "SELECT * FROM TIMERS";
+	$sth = $dbh->prepare($sQuery);
+	unless ($sth->execute()) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Checking timers to set at startup");
+		my $i = 0;
+		while (my $ref = $sth->fetchrow_hashref()) {
+			my $id_timers = $ref->{'id_timers'};
+			my $name = $ref->{'name'};
+			my $duration = $ref->{'duration'};
+			my $command = $ref->{'command'};
+			my $sSecondText = ( $duration > 1 ? "seconds" : "second" );
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Timer $name - id : $id_timers - every $duration $sSecondText - command $command");
+			my $timer = IO::Async::Timer::Periodic->new(
+			    interval => $duration,
+			    on_tick => sub {
+			    	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"Timer every $duration seconds : $command");
+  					$irc->write("$command\x0d\x0a");
+					},
+			);
+			$hTimers{$name} = $timer;
+			$loop->add( $timer );
+			$timer->start;
+			$i++;
+		}
+		if ( $i ) {
+			my $sTimerText = ( $i > 1 ? "timers" : "timer" );
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$i active $sTimerText set at startup");
+		}
+		else {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"No timer to set at startup");
 		}
 	}
 	$sth->finish;
+	return %hTimers;
 }
 
 sub joinChannel(@) {
