@@ -392,11 +392,13 @@ sub mbCommandPrivate(@) {
 	}
 }
 
+# version
 sub mbVersion(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION) = @_;
 	my %MAIN_CONF = %$Config;
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"mbVersion() by $sNick on $sChannel");
 	botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$MAIN_CONF{'main.MAIN_PROG_NAME'} . " v$MAIN_PROG_VERSION ©2017-2018 TeuK");
+	logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"version",undef);
 }
 
 # debug <debug_level>
@@ -412,6 +414,7 @@ sub mbDebug(@) {
 					%MAIN_CONF = $cfg->vars();
 					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Debug set to " . $tArgs[0]);
 					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Debug set to " . $tArgs[0]);
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"debug",("Debug set to " . $tArgs[0]));
 					return %MAIN_CONF;
 				}
 				else {
@@ -453,6 +456,7 @@ sub mbRestart(@) {
 						$irc->send_message( "QUIT", undef, $MAIN_CONF{'main.MAIN_PROG_QUIT_MSG'} );
 					}
 				}
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"restart",undef);
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
@@ -607,6 +611,7 @@ sub mbStatus(@) {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$MAIN_CONF{'main.MAIN_PROG_NAME'} . " v$MAIN_PROG_VERSION Uptime : $sAnswer");
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Memory usage (VM $fVmSize MB) (Resident Set $fResSetSize MB) (Shared Memory $fSharedMemSize MB) (Data and Stack $fDataStackSize MB)");
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Server's uptime : $sUptime");
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"status",undef);
 			}
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Your level does not allow you to use this command.");
@@ -876,6 +881,7 @@ sub mbDbAddCommand(@) {
 								}
 								else {
 									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand added");
+									logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addcmd",("Command $sCommand added"));
 								}
 							}
 							else {
@@ -937,6 +943,7 @@ sub mbDbRemCommand(@) {
 								}
 								else {
 									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand removed");
+									logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"remcmd",("Command $sCommand removed"));
 								}
 							}
 							else {
@@ -999,6 +1006,7 @@ sub mbDbMvCommand(@) {
 								}
 								else {
 									botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand renamed to $sCommandNew");
+									logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"mvcmd",("Command $sCommand renamed to $sCommandNew"));
 								}
 							}
 							else {
@@ -1067,6 +1075,7 @@ sub mbChownCommand(@) {
 									}
 									else {
 										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Changed owner of command $sCommand ($nickname -> $sUsername)");
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chowncmd",("Changed owner of command $sCommand ($nickname -> $sUsername)"));
 									}
 								}
 								else {
@@ -1143,6 +1152,7 @@ sub mbDbModCommand(@) {
 									}
 									else {
 										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Command $sCommand modified");
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"modcmd",("Command $sCommand modified"));
 									}
 								}
 								else {
@@ -1208,6 +1218,7 @@ sub mbDbAddCategoryCommand(@) {
 							}
 							else {
 								botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Category $sCategory added");
+								logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addcatcmd",("Category $sCategory added"));
 							}
 						}
 					}
@@ -1273,6 +1284,7 @@ sub mbDbChangeCategoryCommand(@) {
 									}
 									else {
 										botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Changed category to $sCategory for " . $tArgs[1]);
+										logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chcatcmd",("Changed category to $sCategory for " . $tArgs[1]));
 									}
 								}
 							}
@@ -1327,6 +1339,7 @@ sub mbDbCheckHostnameNickChan(@) {
 							$sResponse = "No result found for hostname $sHostname on $sChannel";
 						}
 						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"checkhostchan",($sHostname));
 						$sth->finish;
 					}
 				}
@@ -1378,6 +1391,7 @@ sub mbDbCheckHostnameNick(@) {
 							$sResponse = "No result found for hostname : $sHostname";
 						}
 						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"checkhost",($sHostname));
 						$sth->finish;
 					}
 				}
@@ -1430,6 +1444,7 @@ sub mbDbCheckNickHostname(@) {
 							$sResponse = "No result found for nick : $sNickSearch";
 						}
 						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"checknick",($sNickSearch));
 						$sth->finish;
 					}
 				}
@@ -1492,6 +1507,7 @@ sub mbDbShowCommand(@) {
 			else {
 				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"$sCommand command does not exist");
 			}
+			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"showcmd",($sCommand));
 		}
 		$sth->finish;
 	}
@@ -1531,6 +1547,7 @@ sub mbCountCommand(@) {
 			}
 			if ( $i ) {
 				botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sNbCommandNotice);
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"countcmd",undef);
 			}
 			else {
 				botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command in database");
@@ -1564,6 +1581,7 @@ sub mbTopCommand(@) {
 		else {
 			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No top commands in database");
 		}
+		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topcmd",undef);
 	}
 	$sth->finish;
 }
@@ -1590,6 +1608,7 @@ sub mbLastCommand(@) {
 		else {
 			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No command found in databse");
 		}
+		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"lastcmd",undef);
 	}
 	$sth->finish;
 }
@@ -1619,6 +1638,7 @@ sub mbDbSearchCommand(@) {
 				else {
 					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"Commands containing $sCommand : $sResponse");
 				}
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"searchcmd",("Commands containing $sCommand"));
 			}
 			$sth->finish;
 		}
@@ -1653,6 +1673,7 @@ sub mbDbOwnersCommand(@) {
 		else {
 			botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sResponse);
 		}
+		logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"owncmd",undef);
 	}
 	$sth->finish;
 	
@@ -1728,6 +1749,7 @@ sub mbAddTimer(@) {
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName added.");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"addtimer",("Timer $sTimerName added."));
 					}
 					$sth->finish;
 				}
@@ -1775,6 +1797,7 @@ sub mbRemTimer(@) {
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Timer $sTimerName removed.");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"remtimer",("Timer $sTimerName removed."));
 					}
 					$sth->finish;
 				}
@@ -1832,6 +1855,7 @@ sub mbTimers(@) {
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No active timers");
 					}
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"timers",undef);
 				}
 				$sth->finish;
 			}

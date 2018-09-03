@@ -243,9 +243,6 @@ my $timer = IO::Async::Timer::Periodic->new(
     on_tick => \&on_timer_tick,
 );
 
-#$loop->add( $timer );
-#$timer->start;
-
 my $irc = Net::Async::IRC->new(
   on_message_text => \&on_private,
   on_message_motd => \&on_motd,
@@ -273,8 +270,6 @@ my $irc = Net::Async::IRC->new(
 );
 
 $loop->add( $irc );
-
-
 
 my $sConnectionNick = $MAIN_CONF{'connection.CONN_NICK'};
 if (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection.CONN_USERMODE'} =~ /x/)) {
