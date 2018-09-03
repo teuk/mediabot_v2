@@ -366,6 +366,9 @@ sub logBot(@) {
 	}
 	my $sQuery = "INSERT INTO ACTIONS_LOG (ts,id_user,id_channel,hostmask,action,args) VALUES (?,?,?,?,?,?)";
 	my $sth = $dbh->prepare($sQuery);
+	unless (defined($tArgs[0])) {
+		$tArgs[0] = "";
+	}
 	unless ($sth->execute(time2str("%Y-%m-%d %H-%M-%S",time),$id_user,$id_channel,$sHostmask,$action,join(" ",@tArgs))) {
 		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"logBot() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 	}

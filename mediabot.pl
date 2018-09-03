@@ -49,8 +49,7 @@ use Mediabot::Plugins;
 # Main Settings
 my %MAIN_CONF;
 my $CONFIG_FILE;
-my $MAIN_PROG_VERSION = '2.0beta';
-my $MAIN_PROG_VERSION_LIVR = $MAIN_PROG_VERSION;
+my $MAIN_PROG_VERSION;
 my $MAIN_PID_FILE;
 my $MAIN_PROG_DAEMON = 0;
 my $LOG;
@@ -140,6 +139,23 @@ sub channelNicksRemove(@);
 # +---------------------------------------------------------------------------+
 my $sFullParams = join(" ",@ARGV);
 my $sServer;
+
+# Get version
+unless (open VERSION, "VERSION") {
+	print STDERR "Could not get version from VERSION file\n";
+	$MAIN_PROG_VERSION = "Unddefined";
+}
+else {
+	my $line;
+	if (defined($line=<VERSION>)) {
+		chomp($line);
+		$MAIN_PROG_VERSION = $line;
+	}
+	else {
+		$MAIN_PROG_VERSION = "Undefined";
+	}
+}
+
 # Check command line parameters
 my $result = GetOptions (
         "conf=s" => \$CONFIG_FILE,
