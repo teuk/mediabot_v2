@@ -143,7 +143,7 @@ my $sServer;
 # Get version
 unless (open VERSION, "VERSION") {
 	print STDERR "Could not get version from VERSION file\n";
-	$MAIN_PROG_VERSION = "Unddefined";
+	$MAIN_PROG_VERSION = "Undefined";
 }
 else {
 	my $line;

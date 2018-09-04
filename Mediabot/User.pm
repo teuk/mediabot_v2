@@ -349,6 +349,7 @@ sub getIdUserChannelLevel(@) {
 	}
 }
 
+# log commands in ACTIONS_LOG
 sub logBot(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$action,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
@@ -2127,7 +2128,7 @@ sub userCstat(@) {
 					while (my $ref = $sth->fetchrow_hashref()) {
 						$sAuthUserStr .= $ref->{'nickname'} . " (" . $ref->{'description'} . ") ";
 					}
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Utilisateurs authentifiés : " . $sAuthUserStr);
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Utilisateurs authentifiÃ©s : " . $sAuthUserStr);
 					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"cstat",@tArgs);
 				}
 				$sth->finish;
@@ -2631,7 +2632,7 @@ sub userTopSay(@) {
 						my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
 						my $sth = $dbh->prepare($sQuery);
 						unless ($sth->execute($sChannel,$tArgs[0])) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"addUserHost() SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 						}
 						else {
 							my $sTopSay = $tArgs[0] . " : ";
@@ -2672,6 +2673,41 @@ sub userTopSay(@) {
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You must be logged to use this command : /msg " . $irc->nick_folded . " login username password");
 			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
 		}
+	}
+}
+
+#greet <nick>
+sub userGreet(@) {
+	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
+	my %MAIN_CONF = %$Config;
+	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
+			my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
+			my $sth = $dbh->prepare($sQuery);
+			unless ($sth->execute($sChannel,$tArgs[0])) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+			}
+			else {
+				my $sTopSay = $tArgs[0] . " : ";
+				my $i = 0;
+				while (my $ref = $sth->fetchrow_hashref()) {
+					my $publictext = $ref->{'publictext'};
+					my $hit = $ref->{'hit'};
+					$sTopSay .= "$publictext ($hit) ";
+					$i++;
+				}
+				if ( $i ) {
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
+				}
+				else {
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");
+				}
+				my $sNoticeMsg = $message->prefix . " topsay on " . $tArgs[0];
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
+				$sth->finish;
+		}
+	}
+	else {
+		botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: greet <nick>");
 	}
 }
 
