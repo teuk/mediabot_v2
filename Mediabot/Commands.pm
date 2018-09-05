@@ -186,7 +186,10 @@ sub mbCommandPublic(@) {
 												}
 		case "checknick"		{ $bFound = 1;
 													mbDbCheckNickHostname(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
-												}		
+												}
+		case "greet"				{ $bFound = 1;
+													userGreet(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
+												}
 		case "nicklist"			{ $bFound = 1;
 														channelNickList(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}

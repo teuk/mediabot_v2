@@ -12,7 +12,7 @@ use Mediabot::Database;
 use Mediabot::Channel;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelList channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userStats userTopicChannel userTopSay userVerifyNick userVoiceChannel userWhoAmI);
+@EXPORT  = qw(actChannel addChannel addUser addUserHost channelAddUser channelDelUser channelJoin channelList channelNickList channelPart channelSet channelStatLines checkAuth checkUserChannelLevel checkUserLevel dumpCmd getIdUser getIdUserLevel getNickInfo getNickInfoWhois getUserChannelLevel getUserChannelLevelByName getUserLevel logBot msgCmd purgeChannel randomChannelNick registerChannel sayChannel userAdd userAccessChannel userAuthNick userChannelInfo userCount userCstat userDeopChannel userDevoiceChannel userGreet userIdent userInfo userInviteChannel userKickChannel userLogin userModinfo userNewPass userOnJoin userOpChannel userPass userShowcommandsChannel userStats userTopicChannel userTopSay userVerifyNick userVoiceChannel userWhoAmI);
 
 sub userCount(@) {
 	my ($Config,$LOG,$dbh) = @_;
@@ -2681,28 +2681,26 @@ sub userGreet(@) {
 	my ($Config,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-			my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
+			my $sQuery = "SELECT greet FROM USER,USER_CHANNEL,CHANNEL WHERE USER.id_user=USER_CHANNEL.id_user AND CHANNEL.id_channel=USER_CHANNEL.id_channel AND name=? AND nickname=?";
 			my $sth = $dbh->prepare($sQuery);
 			unless ($sth->execute($sChannel,$tArgs[0])) {
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 			}
 			else {
-				my $sTopSay = $tArgs[0] . " : ";
-				my $i = 0;
-				while (my $ref = $sth->fetchrow_hashref()) {
-					my $publictext = $ref->{'publictext'};
-					my $hit = $ref->{'hit'};
-					$sTopSay .= "$publictext ($hit) ";
-					$i++;
-				}
-				if ( $i ) {
-					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
+				if (my $ref = $sth->fetchrow_hashref()) {
+					my $greet = $ref->{'greet'};
+					if (defined($greet)) {
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"(" . $tArgs[0] . ") $greet");
+					}
+					else {
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No greet for " . $tArgs[0] . " on $sChannel");
+					}
 				}
 				else {
-					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No greet for " . $tArgs[0] . " on $sChannel");
 				}
-				my $sNoticeMsg = $message->prefix . " topsay on " . $tArgs[0];
-				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
+				my $sNoticeMsg = $message->prefix . " greet on " . $tArgs[0] . " for $sChannel";
+				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"greet",$sNoticeMsg);
 				$sth->finish;
 		}
 	}
