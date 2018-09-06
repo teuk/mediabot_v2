@@ -579,7 +579,13 @@ sub on_message_PRIVMSG(@) {
       }
 		}
 		elsif ( ( $what =~ /http.*:\/\/www\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/m\.youtube\..*\/watch/i ) || ( $what =~ /http.*:\/\/youtu\.be.*/i ) ) {
-			displayYoutubeDetails(\%MAIN_CONF,$LOG,$dbh,$self,$message,$who,$where,$what);
+			my $id_chanset_list = getIdChansetList(\%MAIN_CONF,$LOG,$dbh,"Youtube");
+			if (defined($id_chanset_list)) {
+				my $id_channel_set = getIdChannelSet(\%MAIN_CONF,$LOG,$dbh,$where,$id_chanset_list);
+				if (defined($id_channel_set)) {
+					displayYoutubeDetails(\%MAIN_CONF,$LOG,$dbh,$self,$message,$who,$where,$what);
+				}
+			}
 		}
 		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
 	}

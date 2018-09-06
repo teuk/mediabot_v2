@@ -454,4 +454,57 @@ ALTER TABLE `USER_LEVEL`
 --
 ALTER TABLE `WEBLOG`
   MODIFY `id_weblog` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- Structure de la table `CHANNEL_SET`
+--
+
+CREATE TABLE `CHANNEL_SET` (
+  `id_channel_set` bigint(20) NOT NULL,
+  `id_channel` bigint(20) NOT NULL,
+  `id_chanset_list` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `CHANSET_LIST`
+--
+
+CREATE TABLE `CHANSET_LIST` (
+  `id_chanset_list` bigint(20) NOT NULL,
+  `chanset` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Index pour les tables déchargées
+--
+
+--
+-- Index pour la table `CHANNEL_SET`
+--
+ALTER TABLE `CHANNEL_SET`
+  ADD PRIMARY KEY (`id_channel_set`);
+
+--
+-- Index pour la table `CHANSET_LIST`
+--
+ALTER TABLE `CHANSET_LIST`
+  ADD PRIMARY KEY (`id_chanset_list`);
+
+--
+-- AUTO_INCREMENT pour les tables déchargées
+--
+
+--
+-- AUTO_INCREMENT pour la table `CHANNEL_SET`
+--
+ALTER TABLE `CHANNEL_SET`
+  MODIFY `id_channel_set` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `CHANSET_LIST`
+--
+ALTER TABLE `CHANSET_LIST`
+  MODIFY `id_chanset_list` bigint(20) NOT NULL AUTO_INCREMENT;
 COMMIT;

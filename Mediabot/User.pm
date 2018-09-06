@@ -795,6 +795,7 @@ sub channelSetSyntax(@) {
 	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] chanmode <+chanmode>");
 	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] description <description>");
 	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] auto_join <on|off>");
+	botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanset [#channel] <+value|-value>");
 }
 
 sub channelSet(@) {
@@ -812,7 +813,7 @@ sub channelSet(@) {
 				return undef;
 			}
 			if (defined($iMatchingUserLevel) && ( checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator") || checkUserChannelLevel(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$iMatchingUserId,450))) {
-				if (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) {
+				if ( (defined($tArgs[0]) && ($tArgs[0] ne "") && defined($tArgs[1]) && ($tArgs[1] ne "")) || (defined($tArgs[0]) && ($tArgs[0] ne "") && ((substr($tArgs[0],0,1) eq "+") || (substr($tArgs[0],0,1) eq "-"))) ) {
 					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
 					if (defined($id_channel)) {
 						switch($tArgs[0]) {
@@ -883,11 +884,61 @@ sub channelSet(@) {
 																		}
 																		else {
 																			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"You cannot set $sChannel description to " . $tArgs[0]);
+																			logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",("You cannot set $sChannel description to " . $tArgs[0]));
 																		}
 																	}
 							else								{
-																		channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
-																		return undef;
+																		if ((substr($tArgs[0],0,1) eq "+") || (substr($tArgs[0],0,1) eq "-")){
+																			my $sChansetValue = substr($tArgs[0],1);
+																			my $sChansetAction = substr($tArgs[0],0,1);
+																			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"chansetFlag $sChannel $sChansetAction$sChansetValue");
+																			my $id_chanset_list = getIdChansetList(\%MAIN_CONF,$LOG,$dbh,$sChansetValue);
+																			unless (defined($id_chanset_list)) {
+																				botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Undefined flag $sChansetValue");
+																				logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",($sChannel,"Undefined flag $sChansetValue"));
+																				return undef;
+																			}
+																			my $id_channel_set = getIdChannelSet(\%MAIN_CONF,$LOG,$dbh,$sChannel,$id_chanset_list);
+																			if ( $sChansetAction eq "+" ) {
+																				if (defined($id_channel_set)) {
+																					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Flag +$sChansetValue is already set for $sChannel");
+																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",("Flag +$sChansetValue is already set"));
+																					return undef;
+																				}
+																				my $sQuery = "INSERT INTO CHANNEL_SET (id_channel,id_chanset_list) VALUES (?,?)";
+																				my $sth = $dbh->prepare($sQuery);
+																				unless ($sth->execute($id_channel,$id_chanset_list)) {
+																					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				}
+																				else {
+																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",("Flag $sChansetValue set"));
+																				}
+																				$sth->finish;
+																				return $id_channel;
+																			}
+																			else {
+																				unless (defined($id_channel_set)) {
+																					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Flag $sChansetValue is not set for $sChannel");
+																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",("Flag $sChansetValue is not set"));
+																					return undef;
+																				}
+																				my $sQuery = "DELETE FROM CHANNEL_SET WHERE id_channel_set=?";
+																				my $sth = $dbh->prepare($sQuery);
+																				unless ($sth->execute($id_channel_set)) {
+																					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+																				}
+																				else {
+																					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"chanset",("Flag $sChansetValue unset"));
+																				}
+																				$sth->finish;
+																				return $id_channel;
+																			}
+																			
+																		}
+																		else {
+																			channelSetSyntax(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+																			return undef;
+																		}
 																	}
 						}
 					}
@@ -2629,29 +2680,29 @@ sub userTopSay(@) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-						my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
-						my $sth = $dbh->prepare($sQuery);
-						unless ($sth->execute($sChannel,$tArgs[0])) {
-							log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
+					my $sth = $dbh->prepare($sQuery);
+					unless ($sth->execute($sChannel,$tArgs[0])) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+					}
+					else {
+						my $sTopSay = $tArgs[0] . " : ";
+						my $i = 0;
+						while (my $ref = $sth->fetchrow_hashref()) {
+							my $publictext = $ref->{'publictext'};
+							my $hit = $ref->{'hit'};
+							$sTopSay .= "$publictext ($hit) ";
+							$i++;
+						}
+						if ( $i ) {
+							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
 						}
 						else {
-							my $sTopSay = $tArgs[0] . " : ";
-							my $i = 0;
-							while (my $ref = $sth->fetchrow_hashref()) {
-								my $publictext = $ref->{'publictext'};
-								my $hit = $ref->{'hit'};
-								$sTopSay .= "$publictext ($hit) ";
-								$i++;
-							}
-							if ( $i ) {
-								botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
-							}
-							else {
-								botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");
-							}
-							my $sNoticeMsg = $message->prefix . " topsay on " . $tArgs[0];
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
-							$sth->finish;
+							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");
+						}
+						my $sNoticeMsg = $message->prefix . " topsay on " . $tArgs[0];
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
+						$sth->finish;
 					}
 				}
 				else {

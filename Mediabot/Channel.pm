@@ -9,7 +9,7 @@ use Mediabot::Core;
 use Mediabot::Database;
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw(joinChannels joinChannel getConsoleChan getIdChannel noticeConsoleChan partChannel);
+@EXPORT  = qw(joinChannels joinChannel getConsoleChan getIdChannel noticeConsoleChan partChannel getIdChansetList getIdChannelSet);
 
 sub joinChannels(@) {
 	# Join channel with auto_join set
@@ -153,6 +153,42 @@ sub getIdChannel(@) {
 	}
 	$sth->finish;
 	return $id_channel;
+}
+
+sub getIdChansetList(@) {
+	my ($Config,$LOG,$dbh,$sChansetValue) = @_;
+	my %MAIN_CONF = %$Config;
+	my $id_chanset_list;
+	my $sQuery = "SELECT id_chanset_list FROM CHANSET_LIST WHERE chanset=?";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($sChansetValue) ) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		if (my $ref = $sth->fetchrow_hashref()) {
+			$id_chanset_list = $ref->{'id_chanset_list'};
+		}
+	}
+	$sth->finish;
+	return $id_chanset_list;
+}
+
+sub getIdChannelSet(@) {
+	my ($Config,$LOG,$dbh,$sChannel,$id_chanset_list) = @_;
+	my %MAIN_CONF = %$Config;
+	my $id_channel_set;
+	my $sQuery = "SELECT id_channel_set FROM CHANNEL_SET,CHANNEL WHERE CHANNEL_SET.id_channel=CHANNEL.id_channel AND name=? AND id_chanset_list=?";
+	my $sth = $dbh->prepare($sQuery);
+	unless ($sth->execute($sChannel,$id_chanset_list) ) {
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+	}
+	else {
+		if (my $ref = $sth->fetchrow_hashref()) {
+			$id_channel_set = $ref->{'id_channel_set'};
+		}
+	}
+	$sth->finish;
+	return $id_channel_set;
 }
 
 1;

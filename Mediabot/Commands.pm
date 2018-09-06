@@ -32,7 +32,7 @@ sub mbCommandPublic(@) {
 													mbChangeNick(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 												}
 		case "addtimer"			{ $bFound = 1;
-													%hTimers = mbAddTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+													%hTimers = mbAddTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs);
 												}
 		case "remtimer"			{ $bFound = 1;
 													%hTimers = mbRemTimer($loop,\%$TVars,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
@@ -1718,7 +1718,7 @@ sub mbChangeNick(@) {
 
 # addtimer <name> <frequency> <raw>
 sub mbAddTimer(@) {
-	my ($loop,$TVars,$Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($loop,$TVars,$Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my %hTimers = %$TVars;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
@@ -1733,14 +1733,15 @@ sub mbAddTimer(@) {
 						return %hTimers;
 					}
 					my $iFrequency = $tArgs[0];
+					my $timer;
 					shift @tArgs;
 					my $sRaw = join(" ",@tArgs);
-					my $timer = IO::Async::Timer::Periodic->new(
-					    interval => $iFrequency,
-					    on_tick => sub {
-					    	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"Timer every $iFrequency seconds : $sRaw");
-      					$irc->write("$sRaw\x0d\x0a");
-   						},
+					$timer = IO::Async::Timer::Periodic->new(
+				    interval => $iFrequency,
+				    on_tick => sub {
+				    	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"Timer every $iFrequency seconds : $sRaw");
+    					$irc->write("$sRaw\x0d\x0a");
+ 						},
 					);
 					$hTimers{$sTimerName} = $timer;
 					$loop->add( $timer );
