@@ -1972,6 +1972,23 @@ sub userChannelInfo(@) {
 					}
 				}
 			}
+			$sQuery = "SELECT chanset FROM CHANSET_LIST,CHANNEL_SET,CHANNEL WHERE CHANNEL_SET.id_channel=CHANNEL.id_channel AND CHANNEL_SET.id_chanset_list=CHANSET_LIST.id_chanset_list AND name like ?";
+			$sth = $dbh->prepare($sQuery);
+			unless ($sth->execute($sChannel)) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+			}
+			else {
+				my $sChansetFlags = "Channel flags ";
+				my $i;
+				while (my $ref = $sth->fetchrow_hashref()) {
+					my $chanset = $ref->{'chanset'};
+					$sChansetFlags .= "+$chanset ";
+					$i++;
+				}
+				if ( $i ) {
+					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,$sChansetFlags);
+				}
+			}
 		}
 		else {
 			botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"The channel $sChannel doesn't appear to be registered");
