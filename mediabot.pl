@@ -338,7 +338,7 @@ sub usage(@) {
         if (defined($strErr)) {
                 print STDERR "Error : " . $strErr . "\n";
         }
-        print STDERR "Usage: " . basename($0) . "--conf <config_file> [--daemon]\n";
+        print STDERR "Usage: " . basename($0) . "--conf <config_file> [--daemon] [--server <hostname>]\n";
         exit 4;
 }
 
@@ -587,7 +587,14 @@ sub on_message_PRIVMSG(@) {
 				}
 			}
 		}
-		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
+		if ((ord(substr($what,0,1)) == 1) && ($what =~ /^.ACTION /)) {
+			$what =~ s/(.)/(ord($1) == 1) ? "" : $1/egs;
+			$what =~ s/^ACTION //;
+			logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"action",$who,$where,$what);
+		}
+		else {
+			logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,$message,"public",$who,$where,$what);
+		}
 	}
 	else {
 		# Private message hide passwords

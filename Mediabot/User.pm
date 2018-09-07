@@ -6,6 +6,7 @@ require Exporter;
 
 use Date::Format;
 use Switch;
+use String::IRC;
 use Mediabot::Common;
 use Mediabot::Core;
 use Mediabot::Database;
@@ -2697,7 +2698,7 @@ sub userTopSay(@) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-					my $sQuery = "SELECT publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE event_type='public' AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
+					my $sQuery = "SELECT event_type,publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE (event_type='public' OR event_type='action') AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
 					my $sth = $dbh->prepare($sQuery);
 					unless ($sth->execute($sChannel,$tArgs[0])) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -2707,8 +2708,15 @@ sub userTopSay(@) {
 						my $i = 0;
 						while (my $ref = $sth->fetchrow_hashref()) {
 							my $publictext = $ref->{'publictext'};
+							my $event_type = $ref->{'event_type'};
 							my $hit = $ref->{'hit'};
-							$sTopSay .= "$publictext ($hit) ";
+							$publictext =~ s/(.)/(ord($1) == 1) ? "" : $1/egs;
+							if ( $event_type eq "action" ) {
+								$sTopSay .= String::IRC->new("$publictext ($hit) ")->bold;
+							}
+							else {
+								$sTopSay .= "$publictext ($hit) ";
+							}
 							$i++;
 						}
 						if ( $i ) {
