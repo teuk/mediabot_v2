@@ -2698,7 +2698,7 @@ sub userTopSay(@) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-					my $sQuery = "SELECT event_type,publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE (event_type='public' OR event_type='action') AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 10";
+					my $sQuery = "SELECT event_type,publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE (event_type='public' OR event_type='action') AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 15";
 					my $sth = $dbh->prepare($sQuery);
 					unless ($sth->execute($sChannel,$tArgs[0])) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -2711,7 +2711,7 @@ sub userTopSay(@) {
 							my $event_type = $ref->{'event_type'};
 							my $hit = $ref->{'hit'};
 							$publictext =~ s/(.)/(ord($1) == 1) ? "" : $1/egs;
-							unless ( $publictext =~ /^\s*$/ ) {
+							unless (($publictext =~ /^\s*$/) || ($publictext eq ':)') eq ($publictext eq ';)') || ($publictext eq ':p') || ($publictext eq ':d') || ($publictext eq ':D') || ($publictext eq ':o') || ($publictext eq ':O') || ($publictext eq '(:') || ($publictext eq '(;') || ($publictext =~ /lol/i) || ($publictext eq 'xD') || ($publictext eq 'XD') || ($publictext eq 'heh') || ($publictext eq 'hah') || ($publictext eq 'huh') || ($publictext eq 'hih')) {
 								if ( $event_type eq "action" ) {
 									$sTopSay .= String::IRC->new("$publictext ($hit) ")->bold;
 								}
@@ -2722,7 +2722,7 @@ sub userTopSay(@) {
 							}
 						}
 						if ( $i ) {
-							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
+							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,substr($sTopSay,0,300));
 						}
 						else {
 							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");

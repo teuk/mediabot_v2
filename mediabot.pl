@@ -27,10 +27,7 @@ use Data::Dumper;
 use Time::HiRes qw( usleep );
 use Getopt::Long;
 use Config::Simple;
-use IO::Socket::INET;
-use Net::Server::NonBlocking;
-use WordList::Phrase::FR::Proverb::Wikiquote;
-use Memory::Usage;
+#use IO::Socket::INET;
 use DBI;
 
 use Mediabot::Common;
