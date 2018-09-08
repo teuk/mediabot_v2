@@ -2697,6 +2697,7 @@ sub userTopSay(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
+				my $sChannelDest = $sChannel;
 				if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
 					$sChannel = $tArgs[0];
 					shift @tArgs;
@@ -2706,7 +2707,7 @@ sub userTopSay(@) {
 					return undef;
 				}
 				if (defined($tArgs[0]) && ($tArgs[0] ne "")) {
-					my $sQuery = "SELECT event_type,publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE (event_type='public' OR event_type='action') AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 15";
+					my $sQuery = "SELECT event_type,publictext,count(publictext) as hit FROM CHANNEL,CHANNEL_LOG WHERE (event_type='public' OR event_type='action') AND CHANNEL.id_channel=CHANNEL_LOG.id_channel AND name=? AND nick like ? GROUP BY publictext ORDER by hit DESC LIMIT 30";
 					my $sth = $dbh->prepare($sQuery);
 					unless ($sth->execute($sChannel,$tArgs[0])) {
 						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
@@ -2730,10 +2731,10 @@ sub userTopSay(@) {
 							}
 						}
 						if ( $i ) {
-							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,substr($sTopSay,0,300));
+							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannelDest,substr($sTopSay,0,300));
 						}
 						else {
-							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"No results.");
+							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannelDest,"No results.");
 						}
 						my $sNoticeMsg = $message->prefix . " topsay on " . $tArgs[0];
 						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"topsay",$sNoticeMsg);
