@@ -2711,13 +2711,15 @@ sub userTopSay(@) {
 							my $event_type = $ref->{'event_type'};
 							my $hit = $ref->{'hit'};
 							$publictext =~ s/(.)/(ord($1) == 1) ? "" : $1/egs;
-							if ( $event_type eq "action" ) {
-								$sTopSay .= String::IRC->new("$publictext ($hit) ")->bold;
+							unless ( $publictext =~ /^\s*$/ ) {
+								if ( $event_type eq "action" ) {
+									$sTopSay .= String::IRC->new("$publictext ($hit) ")->bold;
+								}
+								else {
+									$sTopSay .= "$publictext ($hit) ";
+								}
+								$i++;
 							}
-							else {
-								$sTopSay .= "$publictext ($hit) ";
-							}
-							$i++;
 						}
 						if ( $i ) {
 							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,$sTopSay);
