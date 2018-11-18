@@ -7,6 +7,7 @@ require Exporter;
 use POSIX 'setsid';
 use Switch;
 use Data::Dumper;
+use Memory::Usage;
 use Mediabot::Common;
 use Mediabot::Core;
 use Mediabot::Database;
@@ -547,6 +548,7 @@ sub mbStatus(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Master")) {
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"Checking uptime");
 				my $sUptime = "Unknown";
 				unless (open LOAD, "uptime |") {
 					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Could not exec uptime command");

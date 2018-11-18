@@ -315,9 +315,9 @@ $loop->run;
 
 sub on_timer_tick(@) {
 	my @params = @_;
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"---------------------------------------------------------------");
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,Dumper(@params));
-	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"---------------------------------------------------------------");
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"---------------------------------------------------------------");
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,Dumper(@params));
+	#log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,"---------------------------------------------------------------");
 	log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,4,"on_timer_tick() tick");
 	# update pid file
 	my $sPidFilename = $MAIN_CONF{'main.MAIN_PID_FILE'};
