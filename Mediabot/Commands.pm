@@ -155,6 +155,9 @@ sub mbCommandPublic(@) {
 		case "chanstatlines"	{ $bFound = 1;
 														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
 													}
+		case "whotalk"			{ $bFound = 1;
+														whoTalk(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+												}
 		case "countcmd"			{ $bFound = 1;
 														mbCountCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
 												}
