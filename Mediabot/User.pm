@@ -2493,40 +2493,43 @@ sub userAccessChannel(@) {
 
 # chanstatlines #channel
 sub channelStatLines(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-				if (defined($tArgs[0]) && ($tArgs[0] ne "") && (substr($tArgs[0],0,1) eq '#')) {
-					my $sChannel = $tArgs[0];
-					my $sQuery = "SELECT COUNT(*) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR)";
-					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sQuery);
-					my $sth = $dbh->prepare($sQuery);
-					unless ($sth->execute($sChannel)) {
-						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sChannel = $tArgs[0];
+						shift @tArgs;
 					}
 					else {
-						if (my $ref = $sth->fetchrow_hashref()) {
-							my $nbLinesPerHour = $ref->{'nbLinesPerHour'};
-							my $sLineTxt = "line";
-							if ( $nbLinesPerHour > 0 ) {
-								$sLineTxt .= "s";
-							}
-							botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$nbLinesPerHour $sLineTxt per hour on $sChannel");
-							logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chanstatlines",@tArgs);
-						}
-						else {
-							botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel is not registered");
-						}
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines <#channel>");
+						return undef;
 					}
-					$sth->finish;
+				}
+				my $sQuery = "SELECT COUNT(*) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR)";
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sQuery);
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute($sChannel)) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines #channel");
-					return undef;
+					if (my $ref = $sth->fetchrow_hashref()) {
+						my $nbLinesPerHour = $ref->{'nbLinesPerHour'};
+						my $sLineTxt = "line";
+						if ( $nbLinesPerHour > 0 ) {
+							$sLineTxt .= "s";
+						}
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$nbLinesPerHour $sLineTxt per hour on $sChannel");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chanstatlines",@tArgs);
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel is not registered");
+					}
 				}
+				$sth->finish;
 			}
 			else {
 				my $sNoticeMsg = $message->prefix . " chanstatlines command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";
@@ -2546,36 +2549,39 @@ sub channelStatLines(@) {
 
 # whotalk #channel
 sub whoTalk(@) {
-	my ($Config,$LOG,$dbh,$irc,$message,$sNick,@tArgs) = @_;
+	my ($Config,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs) = @_;
 	my %MAIN_CONF = %$Config;
 	my ($iMatchingUserId,$iMatchingUserLevel,$iMatchingUserLevelDesc,$iMatchingUserAuth,$sMatchingUserHandle,$sMatchingUserPasswd,$sMatchingUserInfo1,$sMatchingUserInfo2) = getNickInfo(\%MAIN_CONF,$LOG,$dbh,$message);
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-				if (defined($tArgs[0]) && ($tArgs[0] ne "") && (substr($tArgs[0],0,1) eq '#')) {
-					my $sChannel = $tArgs[0];
-					my $sQuery = "SELECT nick,COUNT(nick) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR) GROUP BY nick ORDER BY nbLinesPerHour DESC LIMIT 5";
-					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sQuery);
-					my $sth = $dbh->prepare($sQuery);
-					unless ($sth->execute($sChannel)) {
-						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
+				if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sChannel = $tArgs[0];
+						shift @tArgs;
 					}
 					else {
-						my $sResult = "Top 5 talker ";
-						while (my $ref = $sth->fetchrow_hashref()) {
-							my $nbLinesPerHour = $ref->{'nbLinesPerHour'};
-							my $sCurrentNick = $ref->{'nick'};
-							$sResult .= "$sCurrentNick ($nbLinesPerHour) ";
-						}
-						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sResult per hour on $sChannel");
-						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whotalk",@tArgs);
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines <#channel>");
+						return undef;
 					}
-					$sth->finish;
+				}
+				my $sQuery = "SELECT nick,COUNT(nick) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR) GROUP BY nick ORDER BY nbLinesPerHour DESC LIMIT 5";
+				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sQuery);
+				my $sth = $dbh->prepare($sQuery);
+				unless ($sth->execute($sChannel)) {
+					log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,1,"SQL Error : " . $DBI::errstr . " Query : " . $sQuery);
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: whotalk #channel");
-					return undef;
+					my $sResult = "Top 5 talker ";
+					while (my $ref = $sth->fetchrow_hashref()) {
+						my $nbLinesPerHour = $ref->{'nbLinesPerHour'};
+						my $sCurrentNick = $ref->{'nick'};
+						$sResult .= "$sCurrentNick ($nbLinesPerHour) ";
+					}
+					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sResult per hour on $sChannel");
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whotalk",@tArgs);
 				}
+				$sth->finish;
 			}
 			else {
 				my $sNoticeMsg = $message->prefix . " whotalk command attempt (command level [Administrator] for user " . $sMatchingUserHandle . "[" . $iMatchingUserLevel ."])";

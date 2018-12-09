@@ -153,10 +153,10 @@ sub mbCommandPublic(@) {
 													mbVersion(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,$MAIN_PROG_VERSION);
 												}
 		case "chanstatlines"	{ $bFound = 1;
-														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs);
 													}
 		case "whotalk"			{ $bFound = 1;
-														whoTalk(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,@tArgs);
+														whoTalk(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,$sNick,@tArgs);
 												}
 		case "countcmd"			{ $bFound = 1;
 														mbCountCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,$sChannel,@tArgs);
