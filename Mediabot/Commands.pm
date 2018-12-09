@@ -383,6 +383,12 @@ sub mbCommandPrivate(@) {
 		case "rnick"				{ $bFound = 1;
 														randomChannelNick(\%hChannelsNicks,\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sNick,undef,@tArgs);
 												}
+		case "chanstatlines"	{ $bFound = 1;
+														channelStatLines(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,$sNick,@tArgs);
+													}
+		case "whotalk"			{ $bFound = 1;
+														whoTalk(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,$sNick,@tArgs);
+												}
 		else								{
 												
 												}

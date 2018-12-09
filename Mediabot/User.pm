@@ -2499,14 +2499,26 @@ sub channelStatLines(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-				if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+				my $sTargetChannel;
+				if (!defined($sChannel)) {
 					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sTargetChannel = $tArgs[0];
 						$sChannel = $tArgs[0];
 						shift @tArgs;
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines <#channel>");
 						return undef;
+					}
+				}
+				else {
+					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sTargetChannel = $sChannel;
+						$sChannel = $tArgs[0];
+						shift @tArgs;
+					}
+					else {
+						$sTargetChannel = $sChannel;
 					}
 				}
 				my $sQuery = "SELECT COUNT(*) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR)";
@@ -2522,8 +2534,8 @@ sub channelStatLines(@) {
 						if ( $nbLinesPerHour > 0 ) {
 							$sLineTxt .= "s";
 						}
-						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$nbLinesPerHour $sLineTxt per hour on $sChannel");
-						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chanstatlines",@tArgs);
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sTargetChannel,"$nbLinesPerHour $sLineTxt per hour on $sChannel");
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"chanstatlines",($sChannel));
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel is not registered");
@@ -2555,14 +2567,26 @@ sub whoTalk(@) {
 	if (defined($iMatchingUserId)) {
 		if (defined($iMatchingUserAuth) && $iMatchingUserAuth) {
 			if (defined($iMatchingUserLevel) && checkUserLevel(\%MAIN_CONF,$LOG,$dbh,$iMatchingUserLevel,"Administrator")) {
-				if (!defined($sChannel) || (defined($tArgs[0]) && ($tArgs[0] ne ""))) {
+				my $sTargetChannel;
+				if (!defined($sChannel)) {
 					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sTargetChannel = $tArgs[0];
 						$sChannel = $tArgs[0];
 						shift @tArgs;
 					}
 					else {
 						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines <#channel>");
 						return undef;
+					}
+				}
+				else {
+					if (defined($tArgs[0]) && ($tArgs[0] ne "") && ( $tArgs[0] =~ /^#/)) {
+						$sTargetChannel = $sChannel;
+						$sChannel = $tArgs[0];
+						shift @tArgs;
+					}
+					else {
+						$sTargetChannel = $sChannel;
 					}
 				}
 				my $sQuery = "SELECT nick,COUNT(nick) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR) GROUP BY nick ORDER BY nbLinesPerHour DESC LIMIT 5";
@@ -2573,13 +2597,20 @@ sub whoTalk(@) {
 				}
 				else {
 					my $sResult = "Top 5 talker ";
+					my $i = 0;
 					while (my $ref = $sth->fetchrow_hashref()) {
 						my $nbLinesPerHour = $ref->{'nbLinesPerHour'};
 						my $sCurrentNick = $ref->{'nick'};
 						$sResult .= "$sCurrentNick ($nbLinesPerHour) ";
+						$i++;
 					}
-					botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sChannel,"$sResult per hour on $sChannel");
-					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whotalk",@tArgs);
+					unless ($i) {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"No result for $sChannel");
+					}
+					else {
+						botPrivmsg(\%MAIN_CONF,$LOG,$dbh,$irc,$sTargetChannel,"$sResult per hour on $sChannel");
+					}
+					logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,"whotalk",($sChannel));
 				}
 				$sth->finish;
 			}
