@@ -292,7 +292,11 @@ if (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection
 	$sConnectionNick = $string . (int(rand(100))+10);
 }
 
+my $sServerPass = (defined($MAIN_CONF{'connection.CONN_PASS'}) ? $MAIN_CONF{'connection.CONN_PASS'} : "");
+my $bNickTriggerCommand = (defined($MAIN_CONF{'main.NICK_TRIGGER'}) ? $MAIN_CONF{'main.NICK_TRIGGER'} : 0);
+
 $irc->login(
+	pass => $sServerPass,
   nick => $sConnectionNick,
   host => $CONN_SERVER,
   user => $MAIN_CONF{'connection.CONN_USERNAME'},
@@ -565,7 +569,7 @@ sub on_message_PRIVMSG(@) {
         	}
         }
 		}
-		elsif ($sCommand eq $self->nick_folded) {
+		elsif (($sCommand eq $self->nick_folded) && $bNickTriggerCommand) {
 			$what =~ s/^\S+\s*//;
 			($sCommand,@tArgs) = split(/\s+/,$what);
 			$sCommand =~ tr/A-Z/a-z/;
