@@ -2575,7 +2575,7 @@ sub whoTalk(@) {
 						shift @tArgs;
 					}
 					else {
-						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: chanstatlines <#channel>");
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: whotalk <#channel>");
 						return undef;
 					}
 				}
@@ -2589,7 +2589,7 @@ sub whoTalk(@) {
 						$sTargetChannel = $sChannel;
 					}
 				}
-				my $sQuery = "SELECT nick,COUNT(nick) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR) GROUP BY nick ORDER BY nbLinesPerHour DESC LIMIT 5";
+				my $sQuery = "SELECT nick,COUNT(nick) as nbLinesPerHour FROM CHANNEL,CHANNEL_LOG WHERE CHANNEL.id_channel=CHANNEL_LOG.id_channel AND (event_type='public' OR event_type='action') AND CHANNEL.name like ? AND ts > date_sub('" . time2str("%Y-%m-%d %H:%M:%S",time) . "', INTERVAL 1 HOUR) GROUP BY nick ORDER BY nbLinesPerHour DESC LIMIT 5";
 				log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,3,$sQuery);
 				my $sth = $dbh->prepare($sQuery);
 				unless ($sth->execute($sChannel)) {
