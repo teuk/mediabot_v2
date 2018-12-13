@@ -295,10 +295,26 @@ if (($MAIN_CONF{'connection.CONN_NETWORK_TYPE'} == 1) && ($MAIN_CONF{'connection
 my $sServerPass = (defined($MAIN_CONF{'connection.CONN_PASS'}) ? $MAIN_CONF{'connection.CONN_PASS'} : "");
 my $bNickTriggerCommand = (defined($MAIN_CONF{'main.NICK_TRIGGER'}) ? $MAIN_CONF{'main.NICK_TRIGGER'} : 0);
 
+my $sConnServer;
+my $sConnServerPort = 6667;
+if ( $CONN_SERVER =~ /:/ ) {
+	$sConnServer = $CONN_SERVER;
+	$sConnServer =~ s/\:.*$//;
+	$sConnServerPort = $CONN_SERVER;
+	$sConnServerPort =~ s/^.*\://;
+}
+else {
+	$sConnServer = $CONN_SERVER;
+}
+
+my $sServerPassDisplay = ( $sServerPass eq "" ? "None defined" : $sServerPass );
+log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"Try to login to $sConnServer:$sConnServerPort (pass : $sServerPassDisplay)");
+
 $irc->login(
 	pass => $sServerPass,
   nick => $sConnectionNick,
-  host => $CONN_SERVER,
+  host => $sConnServer,
+  service => $sConnServerPort,
   user => $MAIN_CONF{'connection.CONN_USERNAME'},
   realname => $MAIN_CONF{'connection.CONN_IRCNAME'},
   on_login => \&on_login,
