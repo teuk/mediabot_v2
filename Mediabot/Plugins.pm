@@ -8,6 +8,7 @@ use Switch;
 use String::IRC;
 use Mediabot::Common;
 use Mediabot::Core;
+use Mediabot::User;
 use Date::Format;
 use Date::Manip;
 use DateTime;

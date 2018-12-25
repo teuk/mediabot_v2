@@ -14,16 +14,21 @@ use Mediabot::Database;
 sub botPrivmsg(@) {
 	my ($Config,$LOG,$dbh,$irc,$sTo,$sMsg) = @_;
 	my %MAIN_CONF = %$Config;
-	my $eventtype = "public";
-	if (substr($sTo, 0, 1) eq '#') {
-		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sTo:<" . $irc->nick_folded . "> $sMsg");
-		logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,undef,$eventtype,$irc->nick_folded,$sTo,$sMsg);
+	if (defined($sTo)) {
+		my $eventtype = "public";
+		if (substr($sTo, 0, 1) eq '#') {
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sTo:<" . $irc->nick_folded . "> $sMsg");
+			logBotAction(\%MAIN_CONF,$LOG,$dbh,$irc,undef,$eventtype,$irc->nick_folded,$sTo,$sMsg);
+		}
+		else {
+			$eventtype = "private";
+			log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"-> *$sTo* $sMsg");
+		}
+		$irc->do_PRIVMSG( target => $sTo, text => $sMsg );
 	}
 	else {
-		$eventtype = "private";
-		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"-> *$sTo* $sMsg");
+		log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"botPrivmsg() ERROR no target specified to send $sMsg");
 	}
-	$irc->do_PRIVMSG( target => $sTo, text => $sMsg );
 }
 
 sub botAction(@) {

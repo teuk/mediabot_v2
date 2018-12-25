@@ -390,7 +390,7 @@ sub mbCommandPrivate(@) {
 														whoTalk(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,$sNick,@tArgs);
 												}
 		else								{
-												
+													$bFound = mbPluginCommand(\%MAIN_CONF,$LOG,$dbh,$irc,$message,undef,$sNick,$sCommand,@tArgs);
 												}
 	}
 	unless ( $bFound ) {
