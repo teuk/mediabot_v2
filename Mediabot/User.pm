@@ -1668,8 +1668,17 @@ sub userInviteChannel(@) {
 					}
 				}
 				else {
-					botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Syntax: invite #channel <nick>");
-					return undef;
+					my $id_channel = getIdChannel(\%MAIN_CONF,$LOG,$dbh,$sChannel);
+					if (defined($id_channel)) {
+						log_message($MAIN_CONF{'main.MAIN_PROG_DEBUG'},$LOG,0,"$sNick issued an invite $sChannel command");
+						$irc->send_message("INVITE",undef,($sNick,$sChannel));
+						logBot(\%MAIN_CONF,$LOG,$dbh,$irc,$message,$sChannel,"invite",($sNick));
+						return $id_channel;
+					}
+					else {
+						botNotice(\%MAIN_CONF,$LOG,$dbh,$irc,$sNick,"Channel $sChannel does not exist");
+						return undef;
+					}
 				}
 			}
 			else {
