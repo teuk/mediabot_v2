@@ -47,6 +47,7 @@ function wait_for_cmd {
 	  sleep 5
 	 done
 	echo -n " "
+	wait $WAIT_PID
 }
 
 message "Autoconfigure cpan"
@@ -59,6 +60,7 @@ Date::Language
 Date::Format
 Date::Manip
 Date::Parse
+DateTime
 IO::Async::Loop
 Net::Async::IRC
 String::IRC
@@ -91,6 +93,7 @@ Date::Language
 Date::Format
 Date::Manip
 Date::Parse
+DateTime
 IO::Async::Loop
 Net::Async::IRC
 String::IRC
