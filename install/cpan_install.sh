@@ -39,7 +39,7 @@ function ok_failed {
 }
 
 function wait_for_cmd {
-	$1 &
+	$1 >>${CPAN_LOGFILE} 2>&1 &
 	WAIT_PID=$!
 	while [ -d /proc/$WAIT_PID ];
 	 do
