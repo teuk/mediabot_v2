@@ -69,12 +69,12 @@ echo "Module::Build" | while read perl_module
  done
 
 messageln "Installing IO::Async::Loop"
-wget https://cpan.metacpan.org/authors/id/P/PE/PEVANS/IO-Async-0.72.tar.gz
-tar xzf IO-Async-0.72.tar.gz
-cd IO-Async-0.72
-perl Build.PL
-./Build
-./Build install
+wget https://cpan.metacpan.org/authors/id/P/PE/PEVANS/IO-Async-0.72.tar.gz >>$CPAN_LOGFILE 2>&1
+tar xzf IO-Async-0.72.tar.gz >>$CPAN_LOGFILE 2>&1
+cd IO-Async-0.72 >>$CPAN_LOGFILE 2>&1
+perl Build.PL >>$CPAN_LOGFILE 2>&1
+./Build >>$CPAN_LOGFILE 2>&1
+./Build install >>$CPAN_LOGFILE 2>&1
 cd ..
 
 messageln "Install perl modules"
