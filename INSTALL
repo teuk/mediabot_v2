@@ -14,7 +14,9 @@ as root user :
 
 You will then need to add sudo rights for it for the configuration stage (you can remove this right after).
 
-as root user add the following line to /etc/sudoers
+If /etc/sudoers file does not exist install "sudo" package (on debian : apt-get install sudo)
+
+As root user add the following line to /etc/sudoers (use : visudo /etc/sudoers)
 
 mediabot   ALL=(ALL) NOPASSWD:ALL
 
@@ -22,7 +24,7 @@ Then change user to mediabot with
 
 # su - mediabot
 
-Then git clone the source code :
+Then git clone the source code (you may install "git" package before, on debian : apt-get install git) :
 
 $ git clone https://github.com/teuk/mediabot_v2
 
@@ -31,6 +33,15 @@ Run ./configure and follow all steps
 $ cd mediabot_v2
 $ ./configure
 
+WHAT IF I GET :
+
+"You should install make utility on your system before installation."
+
+Install "gcc" and "make" packages (on debian : apt-get install build-essential)
+
+"You should install MySQL server and client (at least client) on your system before installation."
+
+Install MySQL or MariaDB server packages (on debian : apt-get install mysql-server)
 
 RUNNING Mediabotv2
 

@@ -83,7 +83,6 @@ Date::Language
 Date::Format
 Date::Manip
 Date::Parse
-DateTime
 Net::Async::IRC
 String::IRC
 Data::Dumper
@@ -96,7 +95,8 @@ WordList::Phrase::FR::Proverb::Wikiquote
 Memory::Usage
 DBD::mysql
 DBI
-Switch" | while read perl_module
+Switch
+DateTime" | while read perl_module
  do
   message "Checking $perl_module "
   perl -M$perl_module -e "exit 0;" &>/dev/null
@@ -116,6 +116,7 @@ Date::Format
 Date::Manip
 Date::Parse
 DateTime
+IO::Async::Loop
 Net::Async::IRC
 String::IRC
 Data::Dumper
