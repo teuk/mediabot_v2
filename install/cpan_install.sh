@@ -54,6 +54,15 @@ message "Autoconfigure cpan"
 bash -c "(echo y;echo o conf prerequisites_policy follow;echo o conf commit)|cpan" >>$CPAN_LOGFILE 2>&1
 ok_failed $?
 
+messageln "Installing IO::Async::Loop"
+wget https://cpan.metacpan.org/authors/id/P/PE/PEVANS/IO-Async-0.72.tar.gz
+tar xzf IO-Async-0.72.tar.gz
+cd IO-Async-0.72
+perl Build.PL
+./Build
+./Build install
+cd ..
+
 messageln "Install perl modules"
 echo "File::Basename
 Date::Language
@@ -61,7 +70,6 @@ Date::Format
 Date::Manip
 Date::Parse
 DateTime
-IO::Async::Loop
 Net::Async::IRC
 String::IRC
 Data::Dumper
@@ -94,7 +102,6 @@ Date::Format
 Date::Manip
 Date::Parse
 DateTime
-IO::Async::Loop
 Net::Async::IRC
 String::IRC
 Data::Dumper
