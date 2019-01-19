@@ -54,6 +54,20 @@ message "Autoconfigure cpan"
 bash -c "(echo y;echo o conf prerequisites_policy follow;echo o conf commit)|cpan" >>$CPAN_LOGFILE 2>&1
 ok_failed $?
 
+messageln "Install perl module Module::Build"
+echo "Module::Build" | while read perl_module
+ do
+  message "Checking $perl_module "
+  perl -M$perl_module -e "exit 0;" &>/dev/null
+  if [ $? -ne 0 ]; then
+  	echo -n "Not found. Installing via cpan "
+		wait_for_cmd "./install_perl_module.sh $perl_module"
+		ok_failed $?
+	else
+		echo "OK"
+	fi
+ done
+
 messageln "Installing IO::Async::Loop"
 wget https://cpan.metacpan.org/authors/id/P/PE/PEVANS/IO-Async-0.72.tar.gz
 tar xzf IO-Async-0.72.tar.gz
