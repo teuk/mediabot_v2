@@ -38,6 +38,16 @@ function ok_failed {
     fi
 }
 
+function wait_for_cmd {
+	$1 &
+	WAIT_PID=$!
+	while [ -d /proc/$WAIT_PID ];
+	 do
+	  echo -n "."
+	  sleep 5
+	 done
+}
+
 message "Autoconfigure cpan"
 bash -c "(echo y;echo o conf prerequisites_policy follow;echo o conf commit)|cpan" >>$CPAN_LOGFILE 2>&1
 ok_failed $?
@@ -68,7 +78,8 @@ Switch" | while read perl_module
   perl -M$perl_module -e "exit 0;" &>/dev/null
   if [ $? -ne 0 ]; then
   	echo -n "Not found. Installing via cpan "
-		bash -c "echo install $perl_module|cpan" >>$CPAN_LOGFILE 2>&1
+		#wait_for_cmd 'bash -c "echo install $perl_module|cpan" >>$CPAN_LOGFILE 2>&1'
+		wait_for_cmd './install_perl_module.sh $perl_module'
 		ok_failed $?
 	else
 		echo "OK"
