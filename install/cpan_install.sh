@@ -46,6 +46,7 @@ function wait_for_cmd {
 	  echo -n "."
 	  sleep 5
 	 done
+	echo -n " "
 }
 
 message "Autoconfigure cpan"
