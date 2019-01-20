@@ -96,6 +96,7 @@ Memory::Usage
 DBD::mysql
 DBI
 Switch
+DateTime
 DateTime" | while read perl_module
  do
   message "Checking $perl_module "
