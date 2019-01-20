@@ -16,7 +16,7 @@ You will then need to add sudo rights for it for the configuration stage (you ca
 
 If /etc/sudoers file does not exist install "sudo" package (on debian : apt-get install sudo)
 
-As root user add the following line to /etc/sudoers (use : visudo /etc/sudoers)
+As root user add the following line to /etc/sudoers (use : visudo)
 
 mediabot   ALL=(ALL) NOPASSWD:ALL
 
