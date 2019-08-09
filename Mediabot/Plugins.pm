@@ -67,6 +67,7 @@ sub displayYoutubeDetails(@) {
 			my $sTitle;
 			my $sDuration;
 			my $sViewCount;
+			my $sDisplayDuration;
 			while(defined($line=<YOUTUBE_INFOS>)) {
 				chomp($line);
 				log_message(0,"i = $i line = $line");
@@ -76,12 +77,24 @@ sub displayYoutubeDetails(@) {
 				elsif ( $i == 1 ) {
 					$sDuration = $line;
 					$sDuration =~ s/^PT//;
+					my $sHour = $sDuration;
+					if ( $sHour =~ /H/ ) {
+						$sHour =~ s/H.*$//;
+						$sDisplayDuration .= "$sHour h ";
+					}
 					my $sMin = $sDuration;
-					$sMin =~ s/M.*$//;
+					if ( $sMin =~ /M/ ) {
+						$sMin =~ s/^.*H//;
+						$sMin =~ s/M.*$//;
+						$sDisplayDuration .= "$sMin mn ";
+					}
 					my $sSec = $sDuration;
-					$sSec =~ s/^.*M//;
-					$sSec =~ s/S$//;
-					$sDuration = $sMin . "mn " . $sSec . "s";
+					if ( $sSec =~ /S/ ) {
+						$sSec =~ s/^.*H//;
+						$sSec =~ s/^.*M//;
+						$sSec =~ s/S$//;
+						$sDisplayDuration .= "$sSec s";
+					}
 				}
 				elsif ( $i == 2 ) {
 					$sViewCount = "vue $line fois";
@@ -90,12 +103,12 @@ sub displayYoutubeDetails(@) {
 				$i++;
 			}
 			
-			if (defined($sTitle) && ( $sTitle ne "" ) && defined($sDuration) && ( $sDuration ne "" ) && defined($sViewCount) && ( $sViewCount ne "" )) {
+			if (defined($sTitle) && ( $sTitle ne "" ) && defined($sDisplayDuration) && ( $sDuration ne "" ) && defined($sViewCount) && ( $sViewCount ne "" )) {
 				my $sMsgSong .= String::IRC->new('You')->black('white');
 				$sMsgSong .= String::IRC->new('Tube')->white('red');
 				$sMsgSong .= String::IRC->new(" $sTitle ")->white('black');
 				$sMsgSong .= String::IRC->new("- ")->orange('black');
-				$sMsgSong .= String::IRC->new("$sDuration ")->grey('black');
+				$sMsgSong .= String::IRC->new("$sDisplayDuration ")->grey('black');
 				$sMsgSong .= String::IRC->new("- ")->orange('black');
 				$sMsgSong .= String::IRC->new("$sViewCount")->grey('black');
 				if ($sMsgSong =~ /An HTTP error 400 occurred/) {
